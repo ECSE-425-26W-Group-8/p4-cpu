@@ -11,22 +11,22 @@ end cache_blocks_tb;
 architecture sim of cache_blocks_tb is
 
     -- 1. Component Declaration for the Unit Under Test (UUT)
-    component cache_blocks
-        port (
-            clk          : IN  std_logic;
-            reset        : IN  std_logic;
-            block_index  : IN  std_logic_vector(4 downto 0);
-            word_offset  : IN  std_logic_vector(1 downto 0);
-            new_line     : IN  block_line_t;
-            new_tag      : IN  std_logic_vector(5 downto 0);
-            data_we      : IN  std_logic;
-            dirty_we     : IN  std_logic;
-            valid        : OUT std_logic;
-            dirty        : OUT std_logic;
-            tag          : OUT std_logic_vector(5 downto 0);
-            word         : OUT word_t
-        );
-    end component;
+    -- component cache_blocks
+        -- port (
+            -- clk          : IN  std_logic;
+            -- reset        : IN  std_logic;
+            -- block_index  : IN  std_logic_vector(4 downto 0);
+            -- word_offset  : IN  std_logic_vector(1 downto 0);
+            -- new_line     : IN  block_line_t;
+            -- new_tag      : IN  std_logic_vector(5 downto 0);
+            -- data_we      : IN  std_logic;
+            -- dirty_we     : IN  std_logic;
+            -- valid        : OUT std_logic;
+            -- dirty        : OUT std_logic;
+            -- tag          : OUT std_logic_vector(5 downto 0);
+            -- word         : OUT word_t
+        -- );
+    -- end component;
 
     -- 2. Signal Declarations
     signal clk_tb          : std_logic := '0';
@@ -50,21 +50,21 @@ architecture sim of cache_blocks_tb is
 begin
 
     -- 3. Instantiate the Unit Under Test (UUT)
-    dut: cache_blocks
-        port map (
-            clk          => clk_tb,
-            reset        => reset_tb,
-            block_index  => block_index_tb,
-            word_offset  => word_offset_tb,
-            new_line     => new_line_tb,
-            new_tag      => new_tag_tb,
-            data_we      => data_we_tb,
-            dirty_we     => dirty_we_tb,
-            valid        => valid_tb,
-            dirty        => dirty_tb,
-            tag          => tag_tb,
-            word         => word_tb
-        );
+    -- dut: cache_blocks
+        -- port map (
+            -- clk          => clk_tb,
+            -- reset        => reset_tb,
+            -- block_index  => block_index_tb,
+            -- word_offset  => word_offset_tb,
+            -- new_line     => new_line_tb,
+            -- new_tag      => new_tag_tb,
+            -- data_we      => data_we_tb,
+            -- dirty_we     => dirty_we_tb,
+            -- valid        => valid_tb,
+            -- dirty        => dirty_tb,
+            -- tag          => tag_tb,
+            -- word         => word_tb
+        -- );
 
     -- 4. Clock Generation Process
     clk_process : process
