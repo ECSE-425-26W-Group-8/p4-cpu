@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.cache_package.all;
+
 entity cache is
 generic(
 	ram_size : INTEGER := 32768;
