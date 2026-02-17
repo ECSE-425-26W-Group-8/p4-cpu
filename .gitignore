@@ -1,7 +1,9 @@
+# gitignore for modelsim compiled result
 work
 transcript
 
 *.mti
 *.mpf
+*.wlf
 
 
