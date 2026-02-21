@@ -19,7 +19,7 @@ port (
 	set_dirty	: IN std_logic;
 
 	--outputs
-	cache_block	: OUT cache_block_t;
+	cache_block	: OUT cache_block_t
   );
 end cache_blocks;
 
@@ -35,7 +35,7 @@ begin
 -- definition
 	int_index <= to_integer(unsigned(block_index));
 	
-	cache_block_t <= cache_array(int_index);
+	cache_block <= cache_array(int_index);
 
 	write_process: process(clk, reset)
 	begin
