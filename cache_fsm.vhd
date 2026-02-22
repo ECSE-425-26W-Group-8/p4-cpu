@@ -63,13 +63,13 @@ begin
         req_vec:= s_read & s_write; -- "10" read, "01" write
         miss_vec:= hit & clean_miss & dirty_miss; -- "100" hit, "010" clean, "001" dirty
         -- Defaults
-        next_state    <= state;
+        next_state <= state;
         s_waitrequest <= '0';
-        m_read        <= '0';
-        m_write       <= '0';
-        writeback     <= '0';
-        data_we       <= '0';
-        set_dirty     <= '0';
+        m_read <= '0';
+        m_write <= '0';
+        writeback <= '0';
+        data_we <= '0';
+        set_dirty <= '0';
 
         case state is
             when IDLE =>
@@ -150,11 +150,14 @@ begin
                     when others =>
                         next_state <= IDLE;  -- not sure if we need this ??? ( did not draw in diagram)
                 end case;
-
-            when others =>
-                next_state <= IDLE; --  not sure if we need this???
-
         end case;
     end process;
+    -- outputs 
+    s_waitrequest <= '1' when state = READ_REQ or state = WRITE_REQ or state = WRITE_TO_MEM or state = REQ_MEM or state = MEM_TO_CACHE_WRITE else '0';
+    m_read <= '1' when state = REQ_MEM else '0';
+    m_write <= '1' when state = WRITE_TO_MEM else '0';
+    writeback <= '1' when state = WRITE_TO_MEM else '0';
+    data_we <= '1' when state = WRITE_DATA or state = MEM_TO_CACHE_WRITE else '0';
+    set_dirty <= '1' when state = WRITE_DATA else '0';
 
 end architecture rtl;
