@@ -74,6 +74,8 @@ signal refill_line : std_logic_vector(127 downto 0) := (others => '0');
 signal byte_cnt : integer range 0 to 15 := 0;
 signal refill_words : block_line_t;
 signal refill_done : std_logic := '0';
+signal merged_line : block_line_t;
+signal fsm_refill_write : std_logic;  -- 1 = write-miss refill, 0 = write hit
 
 -- Memory
 signal mem_addr : integer range 0 to ram_size-1;
@@ -81,6 +83,17 @@ signal mem_addr_base : std_logic_vector(14 downto 0);
 
 signal m_read_pulse : std_logic := '0';
 signal waiting_r    : std_logic := '0';
+
+-- Writeback
+signal wb_addr_base    : std_logic_vector(14 downto 0);
+signal wb_byte_cnt     : integer range 0 to 15 := 0;
+signal writeback_done  : std_logic := '0';
+
+signal wb_line_flat    : std_logic_vector(127 downto 0);
+signal wb_byte         : std_logic_vector(7 downto 0);
+
+signal m_write_pulse   : std_logic := '0';
+signal waiting_w       : std_logic := '0';
 
 begin	
 ---------------------------------------------------------------------
@@ -139,7 +152,7 @@ port map(
 
 s_waitrequest <= fsm_wait;
 m_read <= m_read_pulse;
-m_write       <= fsm_m_write;
+m_write <= m_write_pulse;  
 data_we       <= fsm_data_we;
 set_dirty     <= fsm_set_dirty;
 
@@ -177,6 +190,10 @@ begin
 	end case;
 end process;
 
+-----------------------------------------------------------------------
+-- Request latching process
+-- Latches the address and control signals from the CPU when a new request arrives
+-----------------------------------------------------------------------
 process(clock, reset)
 begin
     if reset = '1' then
@@ -237,6 +254,21 @@ begin
     end if;
 end process;
 
+---------------------------------------------------------------------------
+-- Write word into correct slot in block line for write misses
+---------------------------------------------------------------------------
+process(all)
+begin
+    merged_line <= refill_words;  -- start from line fetched from memory
+
+    case req_wordoff is
+        when "00" => merged_line(0) <= req_wdata;
+        when "01" => merged_line(1) <= req_wdata;
+        when "10" => merged_line(2) <= req_wdata;
+        when others => merged_line(3) <= req_wdata;
+    end case;
+end process;
+
 -----------------------------------------------------------------------
 -- Pulse generation for memory read
 -----------------------------------------------------------------------
@@ -265,6 +297,75 @@ begin
   end if;
 end process;
 
+-----------------------------------------------------------------------
+-- Writeback address logic
+-----------------------------------------------------------------------
+wb_addr_base <= cur_block.tag & req_index & "0000";
+wb_line_flat <= cur_block.block_line(3) &
+                cur_block.block_line(2) &
+                cur_block.block_line(1) &
+                cur_block.block_line(0);
+
+wb_byte <= wb_line_flat(8*wb_byte_cnt + 7 downto 8*wb_byte_cnt);
+
+m_addr <= (to_integer(unsigned(wb_addr_base)) + wb_byte_cnt) when (fsm_m_write='1') else
+          (mem_addr + byte_cnt)                              when (fsm_m_read='1')  else
+          0;
+
+m_writedata <= wb_byte when (fsm_m_write='1') else (others => '0');
+
+-----------------------------------------------------------------------
+-- Pulse generation for memory write
+-----------------------------------------------------------------------
+process(clock, reset)
+begin
+  if reset='1' then
+    m_write_pulse <= '0';
+    waiting_w     <= '0';
+  elsif rising_edge(clock) then
+    m_write_pulse <= '0';
+
+    if fsm_m_write='0' then
+      waiting_w <= '0';
+    else
+      if waiting_w='0' then
+        m_write_pulse <= '1';
+        waiting_w     <= '1';
+      end if;
+
+      if m_waitrequest='0' then
+        waiting_w <= '0';
+      end if;
+    end if;
+  end if;
+end process;
+
+-----------------------------------------------------------------------
+-- Writeback byte counter process
+-----------------------------------------------------------------------
+process(clock, reset)
+begin
+  if reset='1' then
+    wb_byte_cnt    <= 0;
+    writeback_done <= '0';
+  elsif rising_edge(clock) then
+    writeback_done <= '0';
+
+    if fsm_m_write='0' then
+      wb_byte_cnt <= 0;
+    else
+      if m_waitrequest='0' then
+        if wb_byte_cnt = 15 then
+          wb_byte_cnt    <= 0;
+          writeback_done <= '1';
+        else
+          wb_byte_cnt <= wb_byte_cnt + 1;
+        end if;
+      end if;
+    end if;
+  end if;
+end process;
+
 --------------------------------------------------------------------
 -- Convert 128-bit refill buffer into 4x32-bit words
 --------------------------------------------------------------------
@@ -275,13 +376,17 @@ refill_words(3) <= refill_line(127 downto 96);
 
 --------------------------------------------------------------------
 -- Choose what line gets written into cache_blocks
--- If set_dirty=1 -> write-hit update
--- If set_dirty=0 -> refill write (read miss fill)
+-- On a write hit, we want to write the updated line (next_line) which incorporates the new word
+-- On a read miss, we want to write the line fetched from memory (refill_words)
+-- On a write miss, we want to write the merged line which combines the memory line with the new word
 ---------------------------------------------------------------------
-new_line <= next_line    when (fsm_data_we='1' and fsm_set_dirty='1') else
-            refill_words when (fsm_data_we='1' and fsm_set_dirty='0') else
-            next_line; -- default (shouldn't matter since data_we will be low)
+new_line <= next_line     when (fsm_data_we='1' and fsm_set_dirty='1' and fsm_refill_write='0') else
+            refill_words  when (fsm_data_we='1' and fsm_set_dirty='0') else
+            merged_line   when (fsm_data_we='1' and fsm_set_dirty='1' and fsm_refill_write='1') else
+            next_line;
+
+fsm_refill_write <= req_is_write;
 
 new_tag  <= req_tag;
 
-end arch;
+end arch;	
