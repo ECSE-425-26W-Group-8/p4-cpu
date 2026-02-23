@@ -417,10 +417,10 @@ end process;
 --------------------------------------------------------------------
 -- Convert 128-bit refill buffer into 4x32-bit words
 --------------------------------------------------------------------
--- refill_words(0) <= refill_line(31 downto 0);
--- refill_words(1) <= refill_line(63 downto 32);
--- refill_words(2) <= refill_line(95 downto 64);
--- refill_words(3) <= refill_line(127 downto 96);
+refill_words(0) <= refill_line(31 downto 0);
+refill_words(1) <= refill_line(63 downto 32);
+refill_words(2) <= refill_line(95 downto 64);
+refill_words(3) <= refill_line(127 downto 96);
 
 --------------------------------------------------------------------
 -- Choose what line gets written into cache_blocks
