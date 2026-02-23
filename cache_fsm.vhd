@@ -22,7 +22,7 @@ entity cache_fsm is
         s_waitrequest : out std_logic;
         writeback     : out std_logic;
         m_index       : out integer := 0;
-        read_word     : out std_logic;
+        read_byte     : out std_logic;
 
         -- Memory -> FSM
         m_waitrequest : in std_logic;
@@ -173,7 +173,7 @@ begin
     data_we <= '1' when state = WRITE_DATA or state = MEM_TO_CACHE_WRITE else '0';
     set_dirty <= '1' when state = WRITE_DATA else '0';
 
-    read_word <= '1' when (state = REQ_MEM or state = REQ_MEM_WAIT) and m_waitrequest = '0' else '0';
+    read_byte <= '1' when (state = REQ_MEM or state = REQ_MEM_WAIT) and m_waitrequest = '0' else '0';
 
     m_index <= fsm_mem_index;
 
