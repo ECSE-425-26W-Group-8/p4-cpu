@@ -25,7 +25,7 @@ architecture sim of cache_blocks_tb is
     signal finished : boolean := false;
 
     -- Clock Period Definition
-    constant CLK_PERIOD : time := 1 ns;
+    constant CLK_PERIOD : time := 10 ns;
 
 begin
 
