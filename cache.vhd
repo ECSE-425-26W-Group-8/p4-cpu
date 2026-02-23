@@ -204,7 +204,7 @@ wb_addr <= to_integer(unsigned(wb_addr_base));
 --                 cur_block.block_line(1) &
 --                 cur_block.block_line(0);
 
-m_addr <= (wb_addr + fsm_m_index) when (fsm_writeback='1') else
+m_addr <= (wb_addr + fsm_m_index) when (dirty_miss ='1' or fsm_writeback='1') else
           (req_mem_addr + fsm_m_index);
 
 wb_wordoff <= to_integer(TO_UNSIGNED(fsm_m_index,4)(3 downto 2));
