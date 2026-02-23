@@ -44,7 +44,7 @@ architecture rtl of cache_fsm is
         MEM_TO_CACHE_WRITE
     );
 
-    signal state, next_state : state_t;
+    signal state, next_state : state_t := IDLE;
 
 begin
     process(clk, reset)
@@ -62,14 +62,6 @@ begin
     begin
         req_vec:= s_read & s_write; -- "10" read, "01" write
         miss_vec:= hit & clean_miss & dirty_miss; -- "100" hit, "010" clean, "001" dirty
-        -- Defaults
-        next_state <= state;
-        s_waitrequest <= '0';
-        m_read <= '0';
-        m_write <= '0';
-        writeback <= '0';
-        data_we <= '0';
-        set_dirty <= '0';
 
         case state is
             when IDLE =>
@@ -83,7 +75,6 @@ begin
                 end case;  
 
             when READ_REQ =>
-                s_waitrequest <= '1';
                 case miss_vec is
                     when "100" => -- hit
                         next_state <= READ_DATA;
@@ -96,7 +87,6 @@ begin
                 end case;
 
             when WRITE_REQ =>
-                s_waitrequest <= '1';
                 case miss_vec is
                     when "100" => -- hit
                         next_state <= WRITE_DATA;
@@ -109,19 +99,12 @@ begin
                 end case;
 
             when READ_DATA =>
-                s_waitrequest <= '0';
                 next_state <= IDLE;
 
             when WRITE_DATA =>
-                data_we   <= '1';
-                set_dirty <= '1';
-                s_waitrequest <= '0';
                 next_state <= IDLE;
 
             when WRITE_TO_MEM =>
-                m_write <= '1';
-                writeback <= '1';
-                s_waitrequest <= '1';
                 case m_waitrequest is
                     when '0' =>
                         next_state <= REQ_MEM;
@@ -130,8 +113,6 @@ begin
                 end case;
 
             when REQ_MEM =>
-                m_read <= '1';
-                s_waitrequest <= '1';
                 case m_waitrequest is
                     when '0' =>
                         next_state <= MEM_TO_CACHE_WRITE;  
@@ -140,8 +121,6 @@ begin
                 end case;
 
             when MEM_TO_CACHE_WRITE =>
-                data_we <= '1';
-                s_waitrequest <= '1';
                 case req_vec is
                     when "10" =>
                         next_state <= READ_DATA;
