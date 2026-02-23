@@ -49,7 +49,7 @@ architecture arch of cache is
         s_waitrequest : out std_logic;
         writeback     : out std_logic;
         m_index       : out integer := 0;
-        read_word     : out std_logic;
+        read_byte     : out std_logic;
 
         -- Memory -> FSM
         m_waitrequest : in std_logic;
@@ -62,7 +62,7 @@ architecture arch of cache is
         data_we   : out std_logic;
         set_dirty : out std_logic
     );
-    end component cache_fsm;
+end component cache_fsm;
 
     component cache_blocks is
     port (
@@ -101,7 +101,7 @@ signal fsm_m_read     : std_logic;
 signal fsm_m_write    : std_logic;
 signal fsm_writeback  : std_logic;
 signal fsm_m_index    : integer range 0 to 15;
-signal fsm_read_word  : std_logic;
+signal fsm_read_byte  : std_logic;
 signal fsm_data_we    : std_logic;
 signal fsm_set_dirty  : std_logic;
 
@@ -117,7 +117,7 @@ signal req_wdata   : std_logic_vector(31 downto 0) := (others => '0');
 
 -- Line Builder signals (for refill and write-hit updates)
 signal refill_line : std_logic_vector(127 downto 0) := (others => '0');
-signal byte_cnt : integer range 0 to 15 := 0;
+-- signal byte_cnt : integer range 0 to 15 := 0;
 signal refill_words : block_line_t;
 signal refill_done : std_logic := '0';
 
@@ -135,7 +135,7 @@ signal req_mem_addr_base : std_logic_vector(14 downto 0);
 -- Writeback
 signal wb_addr_base    : std_logic_vector(14 downto 0);
 signal wb_addr         : integer range 0 to ram_size-1;
-signal wb_byte_cnt     : integer range 0 to 15 := 0;
+-- signal wb_byte_cnt     : integer range 0 to 15 := 0;
 signal writeback_done  : std_logic := '0';
 
 signal wb_wordoff      : integer range 0 to 3;
@@ -143,8 +143,8 @@ signal wb_byteoff      : integer range 0 to 3;
 signal wb_line_flat    : std_logic_vector(127 downto 0);
 signal wb_byte         : std_logic_vector(7 downto 0);
 
-signal m_write_pulse   : std_logic := '0';
-signal waiting_w       : std_logic := '0';
+-- signal m_write_pulse   : std_logic := '0';
+-- signal waiting_w       : std_logic := '0';
 
 begin	
 --------------------------------------------------------------------
@@ -177,7 +177,7 @@ port map(
   s_waitrequest => fsm_wait,
   writeback     => fsm_writeback,
   m_index       => fsm_m_index,
-  read_word     => fsm_read_word,
+  read_byte     => fsm_read_byte,
   m_waitrequest => m_waitrequest,
   m_read        => fsm_m_read,
   m_write       => fsm_m_write,
@@ -199,10 +199,10 @@ req_mem_addr <= to_integer(unsigned(req_mem_addr_base)); -- Set to integer for m
 
 wb_addr_base <= cur_block.tag & req_index & "0000";
 wb_addr <= to_integer(unsigned(wb_addr_base));
-wb_line_flat <= cur_block.block_line(3) &
-                cur_block.block_line(2) &
-                cur_block.block_line(1) &
-                cur_block.block_line(0);
+-- wb_line_flat <= cur_block.block_line(3) &
+--                 cur_block.block_line(2) &
+--                 cur_block.block_line(1) &
+--                 cur_block.block_line(0);
 
 m_addr <= (wb_addr + fsm_m_index) when (fsm_writeback='1') else
           (req_mem_addr + fsm_m_index);
@@ -234,18 +234,11 @@ with req_wordoff select
 --------------------------------------------------------------------
 -- Build new line for write hit
 --------------------------------------------------------------------
--- process
--- begin
---     next_line <= cur_block.block_line;  -- default copy
---
---     case word_off is
--- 		when "00" => next_line(0) <= req_wdata;
--- 		when "01" => next_line(1) <= req_wdata;
--- 		when "10" => next_line(2) <= req_wdata;
---   		when others => next_line(3) <= req_wdata;
--- 	end case;
--- end process;
-
+next_line <= cur_block.block_line;
+next_line_generate: for i in 0 to 3 generate
+    next_line(i) <= req_wdata when to_integer(unsigned(req_wordoff)) = i else next_line(i);
+end generate next_line_generate;
+    
 -----------------------------------------------------------------------
 -- Request latching process
 -- Latches the address and control signals from the CPU when a new request arrives
@@ -280,35 +273,40 @@ process(clock, reset)
 begin
     if reset = '1' then
         refill_line  <= (others => '0');
-        byte_cnt    <= 0;
-        refill_done <= '0';
-
     elsif rising_edge(clock) then
-        -- Default: not done unless we finish this cycle
-        refill_done <= '0';
-
-        -- If we're not currently doing a memory read burst, reset counter
-        if fsm_m_read = '0' then
-            byte_cnt <= 0;
-
-        else
-            -- We're in refill: capture a byte when memory "accepts"/responds
-            if m_waitrequest = '0' then
-
-                -- store this byte into the correct slot in the 128-bit buffer
-                refill_line(8*byte_cnt + 7 downto 8*byte_cnt) <= m_readdata;
-
-                -- advance counter / detect completion
-                if byte_cnt = 15 then
-                    byte_cnt    <= 0; -- optional reset
-                    refill_done <= '1';
-                else
-                    byte_cnt <= byte_cnt + 1;
-                end if;
-            end if;
+        if fsm_read_byte = '1' then
+            refill_line(8*fsm_m_index + 7 downto 8*fsm_m_index) <= m_readdata;
         end if;
     end if;
 end process;
+
+--         byte_cnt    <= 0;
+--         refill_done <= '0';
+--         -- Default: not done unless we finish this cycle
+--         refill_done <= '0';
+--
+--         -- If we're not currently doing a memory read burst, reset counter
+--         if fsm_m_read = '0' then
+--             byte_cnt <= 0;
+--
+--         else
+--             -- We're in refill: capture a byte when memory "accepts"/responds
+--             if m_waitrequest = '0' then
+--
+--                 -- store this byte into the correct slot in the 128-bit buffer
+--                 refill_line(8*byte_cnt + 7 downto 8*byte_cnt) <= m_readdata;
+--
+--                 -- advance counter / detect completion
+--                 if byte_cnt = 15 then
+--                     byte_cnt    <= 0; -- optional reset
+--                     refill_done <= '1';
+--                 else
+--                     byte_cnt <= byte_cnt + 1;
+--                 end if;
+--             end if;
+--         end if;
+--     end if;
+-- end process;
 
 ---------------------------------------------------------------------------
 -- Write word into correct slot in block line for write misses
@@ -359,34 +357,39 @@ end process;
 -----------------------------------------------------------------------
 -- Pulse generation for memory write
 -----------------------------------------------------------------------
-process(clock, reset)
-begin
-  if reset='1' then
-    m_write_pulse <= '0';
-    waiting_w     <= '0';
-  elsif rising_edge(clock) then
-    m_write_pulse <= '0';
+-- /!\------------------------------/!\
+-- /!\-- REMOVED - handled by FSM --/!\
+-- /!\------------------------------/!\
 
-    if fsm_m_write='0' then
-      waiting_w <= '0';
-    else
-      if waiting_w='0' then
-        m_write_pulse <= '1';
-        waiting_w     <= '1';
-      end if;
-
-      if m_waitrequest='0' then
-        waiting_w <= '0';
-      end if;
-    end if;
-  end if;
-end process;
+-- process(clock, reset)
+-- begin
+--   if reset='1' then
+--     m_write_pulse <= '0';
+--     waiting_w     <= '0';
+--   elsif rising_edge(clock) then
+--     m_write_pulse <= '0';
+--
+--     if fsm_m_write='0' then
+--       waiting_w <= '0';
+--     else
+--       if waiting_w='0' then
+--         m_write_pulse <= '1';
+--         waiting_w     <= '1';
+--       end if;
+--
+--       if m_waitrequest='0' then
+--         waiting_w <= '0';
+--       end if;
+--     end if;
+--   end if;
+-- end process;
 
 -----------------------------------------------------------------------
 -- Writeback byte counter process
 -----------------------------------------------------------------------
-
--- !!!!! REMOVED - handled by FSM !!!!!
+-- /!\------------------------------/!\
+-- /!\-- REMOVED - handled by FSM --/!\
+-- /!\------------------------------/!\
 
 -- process(clock, reset)
 -- begin
@@ -414,10 +417,10 @@ end process;
 --------------------------------------------------------------------
 -- Convert 128-bit refill buffer into 4x32-bit words
 --------------------------------------------------------------------
-refill_words(0) <= refill_line(31 downto 0);
-refill_words(1) <= refill_line(63 downto 32);
-refill_words(2) <= refill_line(95 downto 64);
-refill_words(3) <= refill_line(127 downto 96);
+-- refill_words(0) <= refill_line(31 downto 0);
+-- refill_words(1) <= refill_line(63 downto 32);
+-- refill_words(2) <= refill_line(95 downto 64);
+-- refill_words(3) <= refill_line(127 downto 96);
 
 --------------------------------------------------------------------
 -- Choose what line gets written into cache_blocks
@@ -434,8 +437,7 @@ refill_words(3) <= refill_line(127 downto 96);
 -- fsm_refill_write <= req_is_write;
 
 new_line <= next_line     when (fsm_data_we='1' and fsm_set_dirty='1') else
-            refill_words  when (fsm_data_we='1' and fsm_set_dirty='0') else
-            next_line;
+            refill_words  when (fsm_data_we='1' and fsm_set_dirty='0');
 new_tag  <= req_tag;
 
 end arch;	
