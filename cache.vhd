@@ -31,12 +31,56 @@ end cache;
 
 architecture arch of cache is
 
--- Address fields
-signal addr15      : std_logic_vector(14 downto 0);
-signal tag         : std_logic_vector(5 downto 0);
-signal index       : std_logic_vector(4 downto 0);
-signal word_off    : std_logic_vector(1 downto 0);
+    component cache_fsm is
+    port(
+        clk   : in std_logic;
+        reset : in std_logic;
 
+        -- CPU -> FSM
+        s_read  : in std_logic;
+        s_write : in std_logic;
+
+        -- Internal status signals
+        clean_miss : in std_logic;
+        dirty_miss : in std_logic;
+        hit        : in std_logic;
+
+        -- FSM -> CPU / internal
+        s_waitrequest : out std_logic;
+        writeback     : out std_logic;
+        m_index       : out integer := 0;
+        read_word     : out std_logic;
+
+        -- Memory -> FSM
+        m_waitrequest : in std_logic;
+
+        -- FSM -> memory
+        m_read  : out std_logic;
+        m_write : out std_logic;
+
+        -- FSM -> blocks array
+        data_we   : out std_logic;
+        set_dirty : out std_logic
+    );
+    end component cache_fsm;
+
+    component cache_blocks is
+    port (
+        clk: IN std_logic;
+        reset: IN std_logic;
+        -- indexing inputs
+        block_index : IN std_logic_vector(4 downto 0);
+
+        -- write inputs
+        new_line	: IN block_line_t;
+        new_tag		: IN std_logic_vector(5 downto 0);
+        data_we		: IN std_logic;
+        set_dirty	: IN std_logic;
+
+        --outputs
+        cache_block	: OUT cache_block_t
+    );
+    end component cache_blocks;
 
 -- Cache blocks connections
 signal new_line    : block_line_t;
@@ -64,12 +108,12 @@ signal fsm_set_dirty  : std_logic;
 -- Write-hit helper
 signal next_line   : block_line_t;
 
-signal req_tag     : std_logic_vector(5 downto 0);
-signal req_index   : std_logic_vector(4 downto 0);
-signal req_wordoff : std_logic_vector(1 downto 0);
-signal req_is_write: std_logic;
-signal req_is_read : std_logic;
-signal req_wdata   : std_logic_vector(31 downto 0);
+signal req_tag     : std_logic_vector(5 downto 0) := (others => '0');
+signal req_index   : std_logic_vector(4 downto 0) := (others => '0');
+signal req_wordoff : std_logic_vector(1 downto 0) := (others => '0');
+signal req_is_write: std_logic := '0';
+signal req_is_read : std_logic := '0';
+signal req_wdata   : std_logic_vector(31 downto 0) := (others => '0');
 
 -- Line Builder signals (for refill and write-hit updates)
 signal refill_line : std_logic_vector(127 downto 0) := (others => '0');
@@ -82,11 +126,11 @@ signal refill_done : std_logic := '0';
 -- signal fsm_refill_write : std_logic;  -- 1 = write-miss refill, 0 = write hit
 
 -- Memory
-signal mem_addr : integer range 0 to ram_size-1;
-signal mem_addr_base : std_logic_vector(14 downto 0);
+signal req_mem_addr : integer range 0 to ram_size-1;
+signal req_mem_addr_base : std_logic_vector(14 downto 0);
 
-signal m_read_pulse : std_logic := '0';
-signal waiting_r    : std_logic := '0';
+-- signal m_read_pulse : std_logic := '0';
+-- signal waiting_r    : std_logic := '0';
 
 -- Writeback
 signal wb_addr_base    : std_logic_vector(14 downto 0);
@@ -103,41 +147,10 @@ signal m_write_pulse   : std_logic := '0';
 signal waiting_w       : std_logic := '0';
 
 begin	
----------------------------------------------------------------------
--- Memory & write back Address Logic
----------------------------------------------------------------------
-mem_addr_base <= req_tag & req_index & "0000";  -- Block-aligned byte address
-mem_addr <= to_integer(unsigned(mem_addr_base)); -- Set to integer for memory interface
-
-m_writedata <= (others => '0');
-
-wb_addr_base <= cur_block.tag & req_index & "0000";
-wb_addr <= to_integer(unsigned(wb_addr_base));
-wb_line_flat <= cur_block.block_line(3) &
-                cur_block.block_line(2) &
-                cur_block.block_line(1) &
-                cur_block.block_line(0);
-
-m_addr <= (wb_addr + fsm_m_index) when (fsm_writeback='1') else
-          (mem_addr + fsm_m_index)  when (fsm_m_read='1')  else
-          0;
-
-
-m_writedata <= cur_block.block_line(wb_wordoff)(wb_byteoff+7 downto wb_byteoff);
-
---------------------------------------------------------------------
--- Address decode
---------------------------------------------------------------------
-addr15   <= s_addr(14 downto 0);
--- Address fields driven from latched request
-tag      <= req_tag;
-index    <= req_index;
-word_off <= req_wordoff;
-
 --------------------------------------------------------------------
 -- Cache block storage
 --------------------------------------------------------------------
-u_blocks: entity work.cache_blocks
+u_blocks: cache_blocks
 port map(
     clk         => clock,
     reset       => reset,
@@ -152,7 +165,7 @@ port map(
 ---------------------------------------------------------------------
 -- Cache FSM
 ---------------------------------------------------------------------
-u_fsm: entity work.cache_fsm
+u_fsm: cache_fsm
 port map(
   clk           => clock,
   reset         => reset,
@@ -173,15 +186,38 @@ port map(
 );
 
 s_waitrequest <= fsm_wait;
-m_read <= m_read_pulse;
-m_write <= m_write_pulse;  
+m_read <= fsm_m_read;
+m_write <= fsm_m_write;  
 data_we       <= fsm_data_we;
 set_dirty     <= fsm_set_dirty;
+
+---------------------------------------------------------------------
+-- Memory & write back Address Logic
+---------------------------------------------------------------------
+req_mem_addr_base <= req_tag & req_index & "0000";  -- Block-aligned byte address
+req_mem_addr <= to_integer(unsigned(req_mem_addr_base)); -- Set to integer for memory interface
+
+m_writedata <= (others => '0');
+
+wb_addr_base <= cur_block.tag & req_index & "0000";
+wb_addr <= to_integer(unsigned(wb_addr_base));
+wb_line_flat <= cur_block.block_line(3) &
+                cur_block.block_line(2) &
+                cur_block.block_line(1) &
+                cur_block.block_line(0);
+
+m_addr <= (wb_addr + fsm_m_index) when (fsm_writeback='1') else
+          (req_mem_addr + fsm_m_index);
+
+wb_wordoff <= to_integer(TO_UNSIGNED(fsm_m_index,4)(3 downto 2));
+wb_byteoff <= to_integer(TO_UNSIGNED(fsm_m_index,4)(1 downto 0));
+
+m_writedata <= cur_block.block_line(wb_wordoff)(wb_byteoff+7 downto wb_byteoff);
 
 --------------------------------------------------------------------
 -- Hit / Miss logic
 --------------------------------------------------------------------
-hit        <= '1' when (cur_block.valid='1' and cur_block.tag=tag) else '0';
+hit        <= '1' when (cur_block.valid='1' and cur_block.tag=req_tag) else '0';
 miss       <= not hit;
 
 dirty_miss <= '1' when (miss='1' and cur_block.valid='1' and cur_block.dirty='1') else '0';
@@ -191,7 +227,7 @@ clean_miss <= '1' when (miss='1' and (cur_block.valid='0' or cur_block.dirty='0'
 -- Read hit mux 
 -- word_off "00" should select word 0 (lowest word in block)
 --------------------------------------------------------------------
-with word_off select
+with req_wordoff select
     s_readdata <= cur_block.block_line(0) when "00",
                   cur_block.block_line(1) when "01",
                   cur_block.block_line(2) when "10",
@@ -296,30 +332,30 @@ end process;
 -----------------------------------------------------------------------
 -- Pulse generation for memory read
 -----------------------------------------------------------------------
-process(clock, reset)
-begin
-  if reset='1' then
-    m_read_pulse <= '0';
-    waiting_r    <= '0';
-  elsif rising_edge(clock) then
-    m_read_pulse <= '0'; -- set to low by default, only pulse high for one cycle when starting a new read
-
-    if fsm_m_read='0' then -- we're not requesting a read, so make sure pulse is low and we're not waiting for anything
-      waiting_r <= '0';
-    else
-      -- Start a new byte read only if we're not waiting for the completion pulse
-      if waiting_r='0' then
-        m_read_pulse <= '1';  -- creates rising edge
-        waiting_r    <= '1';
-      end if;
-
-      -- Completion pulse from memory
-      if m_waitrequest='0' then --m_waitrequest pulses low when memory read is finished
-        waiting_r <= '0';     -- allow next read pulse next cycle
-      end if;
-    end if;
-  end if;
-end process;
+-- process(clock, reset)
+-- begin
+--   if reset='1' then
+--     m_read_pulse <= '0';
+--     waiting_r    <= '0';
+--   elsif rising_edge(clock) then
+--     m_read_pulse <= '0'; -- set to low by default, only pulse high for one cycle when starting a new read
+--
+--     if fsm_m_read='0' then -- we're not requesting a read, so make sure pulse is low and we're not waiting for anything
+--       waiting_r <= '0';
+--     else
+--       -- Start a new byte read only if we're not waiting for the completion pulse
+--       if waiting_r='0' then
+--         m_read_pulse <= '1';  -- creates rising edge
+--         waiting_r    <= '1';
+--       end if;
+--
+--       -- Completion pulse from memory
+--       if m_waitrequest='0' then --m_waitrequest pulses low when memory read is finished
+--         waiting_r <= '0';     -- allow next read pulse next cycle
+--       end if;
+--     end if;
+--   end if;
+-- end process;
 
 
 -----------------------------------------------------------------------
