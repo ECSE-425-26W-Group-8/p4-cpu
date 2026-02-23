@@ -74,9 +74,10 @@ signal refill_line : std_logic_vector(127 downto 0) := (others => '0');
 signal byte_cnt : integer range 0 to 15 := 0;
 signal refill_words : block_line_t;
 signal refill_done : std_logic := '0';
+/*
 signal merged_line : block_line_t;
 signal fsm_refill_write : std_logic;  -- 1 = write-miss refill, 0 = write hit
-
+*/
 -- Memory
 signal mem_addr : integer range 0 to ram_size-1;
 signal mem_addr_base : std_logic_vector(14 downto 0);
@@ -257,6 +258,7 @@ end process;
 ---------------------------------------------------------------------------
 -- Write word into correct slot in block line for write misses
 ---------------------------------------------------------------------------
+/*
 process(all)
 begin
     merged_line <= refill_words;  -- start from line fetched from memory
@@ -268,6 +270,7 @@ begin
         when others => merged_line(3) <= req_wdata;
     end case;
 end process;
+*/
 
 -----------------------------------------------------------------------
 -- Pulse generation for memory read
@@ -380,13 +383,17 @@ refill_words(3) <= refill_line(127 downto 96);
 -- On a read miss, we want to write the line fetched from memory (refill_words)
 -- On a write miss, we want to write the merged line which combines the memory line with the new word
 ---------------------------------------------------------------------
+/*
 new_line <= next_line     when (fsm_data_we='1' and fsm_set_dirty='1' and fsm_refill_write='0') else
             refill_words  when (fsm_data_we='1' and fsm_set_dirty='0') else
             merged_line   when (fsm_data_we='1' and fsm_set_dirty='1' and fsm_refill_write='1') else
             next_line;
 
 fsm_refill_write <= req_is_write;
-
+*/
+new_line <= next_line     when (fsm_data_we='1' and fsm_set_dirty='1') else
+            refill_words  when (fsm_data_we='1' and fsm_set_dirty='0') else
+            next_line;
 new_tag  <= req_tag;
 
 end arch;	
