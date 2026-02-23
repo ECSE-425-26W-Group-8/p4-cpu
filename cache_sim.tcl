@@ -19,10 +19,10 @@ add wave -label clk /cache_tb/clk
 # Wave setup: cache interface
 add wave -divider "Cache Interface"
 add wave -label s_read /cache_tb/s_read
-add wave -label s_readdata /cache_tb/s_readdata
-add wave -label s_addr /cache_tb/s_addr
+add wave -label s_readdata -radix unsigned /cache_tb/s_readdata
+add wave -label s_addr -radix unsigned /cache_tb/s_addr
 add wave -label s_write /cache_tb/s_write
-add wave -label s_writedata /cache_tb/s_writedata
+add wave -label s_writedata -radix unsigned /cache_tb/s_writedata
 add wave -label s_waitrequest /cache_tb/s_waitrequest
 
 # Wave setup: Internal signals (FSM status and control)
@@ -30,15 +30,15 @@ add wave -label s_waitrequest /cache_tb/s_waitrequest
 
 # Wave setup: Memory-side interface
 add wave -divider "Memory Interface"
-add wave -label m_addr /cache_tb/m_addr
+add wave -label m_addr -radix unsigned /cache_tb/m_addr
 add wave -label m_read /cache_tb/m_read
-add wave -label m_readdata /cache_tb/m_readdata
+add wave -label m_readdata -radix unsigned /cache_tb/m_readdata
 add wave -label m_write /cache_tb/m_write
-add wave -label m_writedata /cache_tb/m_writedata
+add wave -label m_writedata -radix unsigned /cache_tb/m_writedata
 add wave -label m_waitrequest /cache_tb/m_waitrequest
 
 # Configure wave window
 wave zoom full
 
 # Run simulation
-run 500 ns
+run 50 ns

@@ -95,6 +95,7 @@ port map(
 );
 
 MEM : memory
+generic map (ram_size => 15)
 port map (
     clock => clk,
     writedata => m_writedata,
@@ -131,7 +132,7 @@ begin
 -- 2. test to make sure that I know what its supposed to look like
 	wait until rising_edge(clk);
 	report "write test start";
-	s_addr <= std_logic_vector(to_unsigned(0, 32));
+	s_addr <= std_logic_vector(to_unsigned(9, 32));
 	s_writedata <= std_logic_vector(to_unsigned(8193, 32));
 	s_write <= '1';
 	--if s_waitrequest = '1' then
@@ -143,7 +144,7 @@ begin
 	s_read <= '0';
 	report "Should be done now";
 	sim_done <= true;
-	std.env.stop;
+	--std.env.stop;
 	
 	wait;
 end process;
