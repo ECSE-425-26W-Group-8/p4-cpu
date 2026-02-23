@@ -26,6 +26,7 @@ architecture behavior of cache_fsm_tb is
             s_waitrequest : out std_logic;
             writeback     : out std_logic;
             m_index       : out integer;
+            read_word     : out std_logic;
 
             -- Memory -> FSM
             m_waitrequest : in std_logic;
@@ -68,6 +69,7 @@ architecture behavior of cache_fsm_tb is
     signal s_waitrequest : std_logic;
     signal writeback     : std_logic;
     signal m_index       : integer := 0;
+    signal read_word     : std_logic;
     signal m_waitrequest : std_logic;
     signal m_read        : std_logic;
     signal m_write       : std_logic;
@@ -104,6 +106,7 @@ begin
         s_waitrequest => s_waitrequest,
         writeback     => writeback,
         m_index       => m_index,
+        read_word     => read_word,
         m_waitrequest => m_waitrequest,
         m_read        => m_read,
         m_write       => m_write,

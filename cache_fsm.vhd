@@ -22,7 +22,7 @@ entity cache_fsm is
         s_waitrequest : out std_logic;
         writeback     : out std_logic;
         m_index       : out integer := 0;
-        build_block   : out std_logic;
+        read_word     : out std_logic;
 
         -- Memory -> FSM
         m_waitrequest : in std_logic;
@@ -60,13 +60,15 @@ begin
             state <= next_state;
 
             -- Increment logic: only when memory is ready ('0')
-            if (state = WRITE_TO_MEM or state = REQ_MEM) and m_waitrequest = '0' then
+            -- if (state = WRITE_TO_MEM or state = REQ_MEM) and m_waitrequest = '0' then
+            if (state = WRITE_TO_MEM or state = REQ_MEM or state = WRITE_TO_MEM_WAIT or state = REQ_MEM_WAIT) and m_waitrequest = '0' then
                 if fsm_mem_index = 15 then
                     fsm_mem_index <= 0;
                 else
                     fsm_mem_index <= fsm_mem_index + 1;
                 end if;
-            elsif state /= WRITE_TO_MEM and state /= REQ_MEM then
+            -- elsif state /= WRITE_TO_MEM and state /= REQ_MEM then
+            elsif state /= WRITE_TO_MEM and state /= REQ_MEM and state /= WRITE_TO_MEM_WAIT and state /= REQ_MEM_WAIT then
                 fsm_mem_index <= 0; -- Reset when not in burst
             end if;
         end if;
@@ -123,22 +125,32 @@ begin
             when WRITE_TO_MEM =>
                 if m_waitrequest = '1' and fsm_mem_index = 15 then
                     next_state <= WRITE_TO_MEM_WAIT;
+                    -- next_state <= REQ_MEM;
                 else
                     next_state <= WRITE_TO_MEM;
                 end if;
 
             when WRITE_TO_MEM_WAIT =>
-                next_state <= REQ_MEM;
+                if m_waitrequest = '0' then
+                    next_state <= REQ_MEM;
+                else
+                    next_state <= WRITE_TO_MEM_WAIT;
+                end if;
 
             when REQ_MEM =>
                 if m_waitrequest = '1' and fsm_mem_index = 15 then
                     next_state <= REQ_MEM_WAIT;  
+                    -- next_state <= MEM_TO_CACHE_WRITE;
                 else
                     next_state <= REQ_MEM;
                 end if;
 
             when REQ_MEM_WAIT =>
-                next_state <= MEM_TO_CACHE_WRITE;
+                if m_waitrequest = '0' then
+                    next_state <= MEM_TO_CACHE_WRITE;
+                else
+                    next_state <= REQ_MEM_WAIT;
+                end if;
 
             when MEM_TO_CACHE_WRITE =>
                 case req_vec is
@@ -149,8 +161,8 @@ begin
                     when others =>
                         next_state <= IDLE; 
                 end case;
-            -- when others =>
-            --     next_state <= IDLE;
+            when others =>
+                next_state <= IDLE;
         end case;
     end process;
     -- outputs 
@@ -160,6 +172,8 @@ begin
     writeback <= '1' when state = WRITE_TO_MEM else '0';
     data_we <= '1' when state = WRITE_DATA or state = MEM_TO_CACHE_WRITE else '0';
     set_dirty <= '1' when state = WRITE_DATA else '0';
+
+    read_word <= '1' when (state = REQ_MEM or state = REQ_MEM_WAIT) and m_waitrequest = '0' else '0';
 
     m_index <= fsm_mem_index;
 
