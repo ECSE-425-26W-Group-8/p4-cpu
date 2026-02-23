@@ -117,20 +117,11 @@ signal req_wdata   : std_logic_vector(31 downto 0) := (others => '0');
 
 -- Line Builder signals (for refill and write-hit updates)
 signal refill_line : std_logic_vector(127 downto 0) := (others => '0');
--- signal byte_cnt : integer range 0 to 15 := 0;
 signal refill_words : block_line_t;
-signal refill_done : std_logic := '0';
-
-
--- signal merged_line : block_line_t;
--- signal fsm_refill_write : std_logic;  -- 1 = write-miss refill, 0 = write hit
 
 -- Memory
 signal req_mem_addr : integer range 0 to ram_size-1;
 signal req_mem_addr_base : std_logic_vector(14 downto 0);
-
--- signal m_read_pulse : std_logic := '0';
--- signal waiting_r    : std_logic := '0';
 
 -- Writeback
 signal wb_addr_base    : std_logic_vector(14 downto 0);
@@ -142,9 +133,6 @@ signal wb_wordoff      : integer range 0 to 3;
 signal wb_byteoff      : integer range 0 to 3;
 signal wb_line_flat    : std_logic_vector(127 downto 0);
 signal wb_byte         : std_logic_vector(7 downto 0);
-
--- signal m_write_pulse   : std_logic := '0';
--- signal waiting_w       : std_logic := '0';
 
 begin	
 --------------------------------------------------------------------
@@ -199,10 +187,6 @@ req_mem_addr <= to_integer(unsigned(req_mem_addr_base)); -- Set to integer for m
 
 wb_addr_base <= cur_block.tag & req_index & "0000";
 wb_addr <= to_integer(unsigned(wb_addr_base));
--- wb_line_flat <= cur_block.block_line(3) &
---                 cur_block.block_line(2) &
---                 cur_block.block_line(1) &
---                 cur_block.block_line(0);
 
 m_addr <= (wb_addr + fsm_m_index) when (dirty_miss ='1' or fsm_writeback='1') else
           (req_mem_addr + fsm_m_index);
@@ -280,139 +264,6 @@ begin
     end if;
 end process;
 
---         byte_cnt    <= 0;
---         refill_done <= '0';
---         -- Default: not done unless we finish this cycle
---         refill_done <= '0';
---
---         -- If we're not currently doing a memory read burst, reset counter
---         if fsm_m_read = '0' then
---             byte_cnt <= 0;
---
---         else
---             -- We're in refill: capture a byte when memory "accepts"/responds
---             if m_waitrequest = '0' then
---
---                 -- store this byte into the correct slot in the 128-bit buffer
---                 refill_line(8*byte_cnt + 7 downto 8*byte_cnt) <= m_readdata;
---
---                 -- advance counter / detect completion
---                 if byte_cnt = 15 then
---                     byte_cnt    <= 0; -- optional reset
---                     refill_done <= '1';
---                 else
---                     byte_cnt <= byte_cnt + 1;
---                 end if;
---             end if;
---         end if;
---     end if;
--- end process;
-
----------------------------------------------------------------------------
--- Write word into correct slot in block line for write misses
----------------------------------------------------------------------------
-
--- process(all)
--- begin
---     merged_line <= refill_words;  -- start from line fetched from memory
---
---     case req_wordoff is
---         when "00" => merged_line(0) <= req_wdata;
---         when "01" => merged_line(1) <= req_wdata;
---         when "10" => merged_line(2) <= req_wdata;
---         when others => merged_line(3) <= req_wdata;
---     end case;
--- end process;
-
-
------------------------------------------------------------------------
--- Pulse generation for memory read
------------------------------------------------------------------------
--- process(clock, reset)
--- begin
---   if reset='1' then
---     m_read_pulse <= '0';
---     waiting_r    <= '0';
---   elsif rising_edge(clock) then
---     m_read_pulse <= '0'; -- set to low by default, only pulse high for one cycle when starting a new read
---
---     if fsm_m_read='0' then -- we're not requesting a read, so make sure pulse is low and we're not waiting for anything
---       waiting_r <= '0';
---     else
---       -- Start a new byte read only if we're not waiting for the completion pulse
---       if waiting_r='0' then
---         m_read_pulse <= '1';  -- creates rising edge
---         waiting_r    <= '1';
---       end if;
---
---       -- Completion pulse from memory
---       if m_waitrequest='0' then --m_waitrequest pulses low when memory read is finished
---         waiting_r <= '0';     -- allow next read pulse next cycle
---       end if;
---     end if;
---   end if;
--- end process;
-
-
------------------------------------------------------------------------
--- Pulse generation for memory write
------------------------------------------------------------------------
--- /!\------------------------------/!\
--- /!\-- REMOVED - handled by FSM --/!\
--- /!\------------------------------/!\
-
--- process(clock, reset)
--- begin
---   if reset='1' then
---     m_write_pulse <= '0';
---     waiting_w     <= '0';
---   elsif rising_edge(clock) then
---     m_write_pulse <= '0';
---
---     if fsm_m_write='0' then
---       waiting_w <= '0';
---     else
---       if waiting_w='0' then
---         m_write_pulse <= '1';
---         waiting_w     <= '1';
---       end if;
---
---       if m_waitrequest='0' then
---         waiting_w <= '0';
---       end if;
---     end if;
---   end if;
--- end process;
-
------------------------------------------------------------------------
--- Writeback byte counter process
------------------------------------------------------------------------
--- /!\------------------------------/!\
--- /!\-- REMOVED - handled by FSM --/!\
--- /!\------------------------------/!\
-
--- process(clock, reset)
--- begin
---   if reset='1' then
---     wb_byte_cnt    <= 0;
---     writeback_done <= '0';
---   elsif rising_edge(clock) then
---     writeback_done <= '0';
---
---     if fsm_m_write='0' then
---       wb_byte_cnt <= 0;
---     else
---       if m_waitrequest='0' then
---         if wb_byte_cnt = 15 then
---           wb_byte_cnt    <= 0;
---           writeback_done <= '1';
---         else
---           wb_byte_cnt <= wb_byte_cnt + 1;
---         end if;
---       end if;
---     end if;
---   end if;
--- end process;
 
 --------------------------------------------------------------------
 -- Convert 128-bit refill buffer into 4x32-bit words
@@ -422,22 +273,9 @@ refill_words(1) <= refill_line(63 downto 32);
 refill_words(2) <= refill_line(95 downto 64);
 refill_words(3) <= refill_line(127 downto 96);
 
---------------------------------------------------------------------
--- Choose what line gets written into cache_blocks
--- On a write hit, we want to write the updated line (next_line) which incorporates the new word
--- On a read miss, we want to write the line fetched from memory (refill_words)
--- On a write miss, we want to write the merged line which combines the memory line with the new word
----------------------------------------------------------------------
-
--- new_line <= next_line     when (fsm_data_we='1' and fsm_set_dirty='1' and fsm_refill_write='0') else
---             refill_words  when (fsm_data_we='1' and fsm_set_dirty='0') else
---             merged_line   when (fsm_data_we='1' and fsm_set_dirty='1' and fsm_refill_write='1') else
---             next_line;
---
--- fsm_refill_write <= req_is_write;
 
 new_line <= next_line     when (fsm_data_we='1' and fsm_set_dirty='1') else
             refill_words  when (fsm_data_we='1' and fsm_set_dirty='0');
 new_tag  <= req_tag;
 
-end arch;	
+end arch;
