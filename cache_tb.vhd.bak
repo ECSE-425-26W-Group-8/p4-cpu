@@ -68,8 +68,6 @@ signal m_write : std_logic;
 signal m_writedata : std_logic_vector (7 downto 0);
 signal m_waitrequest : std_logic; 
 
-signal sim_done : boolean := false;
-
 begin
 
 -- Connect the components which we instantiated above to their
@@ -108,18 +106,13 @@ port map (
 
 clk_process : process
 begin
-	if not sim_done then
-		clk <= '0';
-		wait for clk_period/2;
-		clk <= '1';
-		wait for clk_period/2;
-	else
-		wait;
-	end if;
+  clk <= '0';
+  wait for clk_period/2;
+  clk <= '1';
+  wait for clk_period/2;
 end process;
 
 test_process : process
-
 begin
 -- 1 - reset the system
 	reset <= '1';
@@ -133,19 +126,9 @@ begin
 	report "write test start";
 	s_addr <= std_logic_vector(to_unsigned(0, 32));
 	s_writedata <= std_logic_vector(to_unsigned(8193, 32));
-	s_write <= '1';
-	--if s_waitrequest = '1' then
-		--wait until s_waitrequest = '0';
-	--end if;
+	s_write <= "1";
 	wait for clk_period * 4;
-	wait until rising_edge(clk);
-	s_write <= '0';
-	s_read <= '0';
 	report "Should be done now";
-	sim_done <= true;
-	std.env.stop;
-	
-	wait;
 end process;
 	
 end;

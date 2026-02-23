@@ -1,3 +1,6 @@
+vlib work
+vmap work work
+
 # Compile the design files (VHDL-2008 for std.env.stop)
 vcom -2008 -work work cache_package.vhd
 vcom -2008 -work work memory.vhd
@@ -10,8 +13,8 @@ vsim -voptargs="+acc" work.cache_tb
 
 # Sys signals
 add wave -divider "System"
-add wave -label reset /cache_fsm_tb/reset
-add wave -label clk /cache_fsm_tb/clk
+add wave -label reset /cache_tb/reset
+add wave -label clk /cache_tb/clk
 
 # Wave setup: cache interface
 add wave -divider "Cache Interface"
@@ -38,4 +41,4 @@ add wave -label m_waitrequest /cache_tb/m_waitrequest
 wave zoom full
 
 # Run simulation
-run -all
+run 500 ns
