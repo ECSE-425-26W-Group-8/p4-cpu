@@ -114,9 +114,59 @@ end process;
 
 test_process : process
 begin
+-- 1 - reset the system
+	reset <= '1';
+	wait for clk_period * 2;
+	reset = '0';
+	wait until rising_edge(clk);
+	report "Reset Complete";
 
--- put your tests here
-	
+s_addr <= 11111111111111111000000000000000;
+-- write to invalid MEM
+write&!valid&dirty&!equal	-- just write to each of these
+write&!valid&dirty&equal
+write&!valid&!dirty&!equal
+write&!valid&!dirty&equal
+
+-- read invalid MEM
+read&!valid&dirty&!equal	-- just pull from mem for each of these
+read&!valid&dirty&equal
+read&!valid&!dirty&!equal
+read&!valid&!dirty&equal
+
+-- read a perfect match
+read&valid&dirty&equal
+-- read a perfect dirty match
+read&valid&!dirty&equal
+-- read a non equal non dirty - recive from mem
+read&valid&!dirty&!equal
+-- read a non equal dirty - write and recieve from mem
+read&valid&dirty&!equal
+
+
+-- write to a valid equal
+write&valid&!dirty&equal	-- need to overwrite the current val
+write&valid&dirty&equal
+
+-- write to non equal dirty frame - write to memory and write to cache
+write&valid&dirty&!equal	
+-- write to non equal non dirty frame	-- write to here not to memory
+write&valid&!dirty&!equal
+
+
 end process;
 	
 end;
+
+-- assure:
+	-- cache looks how we want it to at the end of each test
+	-- should I check to make sure we aren't sending things to memory and
+		-- waiting when we don't have to send to mem?
+
+-- additionally:
+	-- a slave device should assert waitrequest when in reset
+		-- check the assignment details
+	-- read & write signals at same time?
+	-- read twice, write twice in a row
+		
+we are reading and writing 
