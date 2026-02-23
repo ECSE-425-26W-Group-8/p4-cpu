@@ -200,17 +200,17 @@ with word_off select
 --------------------------------------------------------------------
 -- Build new line for write hit
 --------------------------------------------------------------------
-process
-begin
-    next_line <= cur_block.block_line;  -- default copy
-
-    case word_off is
-		when "00" => next_line(0) <= req_wdata;
-		when "01" => next_line(1) <= req_wdata;
-		when "10" => next_line(2) <= req_wdata;
-  		when others => next_line(3) <= req_wdata;
-	end case;
-end process;
+-- process
+-- begin
+--     next_line <= cur_block.block_line;  -- default copy
+--
+--     case word_off is
+-- 		when "00" => next_line(0) <= req_wdata;
+-- 		when "01" => next_line(1) <= req_wdata;
+-- 		when "10" => next_line(2) <= req_wdata;
+--   		when others => next_line(3) <= req_wdata;
+-- 	end case;
+-- end process;
 
 -----------------------------------------------------------------------
 -- Request latching process
