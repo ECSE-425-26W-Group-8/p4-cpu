@@ -169,7 +169,7 @@ begin
     s_waitrequest <= '1' when state = READ_REQ or state = WRITE_REQ or state = WRITE_TO_MEM or state = REQ_MEM or state = MEM_TO_CACHE_WRITE or state = REQ_MEM_WAIT or state = WRITE_TO_MEM_WAIT else '0';
     m_read <= '1' when state = REQ_MEM and not (fsm_mem_index = 15 and m_waitrequest = '0') else '0';
     m_write <= '1' when state = WRITE_TO_MEM and not (fsm_mem_index = 15 and m_waitrequest = '0') else '0';
-    writeback <= '1' when state = WRITE_TO_MEM else '0';
+    writeback <= '1' when state = WRITE_TO_MEM or state = WRITE_TO_MEM_WAIT else '0';
     data_we <= '1' when state = WRITE_DATA or state = MEM_TO_CACHE_WRITE else '0';
     set_dirty <= '1' when state = WRITE_DATA else '0';
 
