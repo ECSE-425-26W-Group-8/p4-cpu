@@ -197,8 +197,6 @@ set_dirty     <= fsm_set_dirty;
 req_mem_addr_base <= req_tag & req_index & "0000";  -- Block-aligned byte address
 req_mem_addr <= to_integer(unsigned(req_mem_addr_base)); -- Set to integer for memory interface
 
-m_writedata <= (others => '0');
-
 wb_addr_base <= cur_block.tag & req_index & "0000";
 wb_addr <= to_integer(unsigned(wb_addr_base));
 wb_line_flat <= cur_block.block_line(3) &
