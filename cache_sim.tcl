@@ -3,6 +3,7 @@ vmap work work
 
 # Compile the design files (VHDL-2008 for std.env.stop)
 vcom -2008 -work work cache_package.vhd
+vcom -2008 -work work cache_blocks.vhd
 vcom -2008 -work work memory.vhd
 vcom -2008 -work work cache_fsm.vhd
 vcom -2008 -work work cache.vhd
