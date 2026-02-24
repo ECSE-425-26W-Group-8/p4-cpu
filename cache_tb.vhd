@@ -120,6 +120,36 @@ begin
 end process;
 
 test_process : process
+procedure request_cpu (
+    constant is_write : in boolean;
+    constant addr     : in integer;
+    constant data     : in std_logic_vector(31 downto 0)
+) is
+begin
+    -- 1. Setup the address and data
+    s_addr  <= std_logic_vector(to_unsigned(addr, 32));
+    s_writedata <= data;
+    
+    -- 2. Assert the appropriate command signal
+    if is_write then
+        s_write <= '1';
+        s_read  <= '0';
+    else
+        s_write <= '0';
+        s_read  <= '1';
+    end if;
+
+    -- 3. Wait for the cache controller handshaking
+    wait until s_waitrequest = '1';
+    wait until s_waitrequest = '0';
+
+    -- 4. Deassert command signals
+    s_write <= '0';
+    s_read  <= '0';
+    
+    -- 5. Small buffer to separate consecutive requests
+    wait for clk_period;
+end procedure;
 
 begin
 -- 1 - reset the system
@@ -132,22 +162,19 @@ begin
 -- 2. test to make sure that I know what its supposed to look like
 	wait until rising_edge(clk);
 	report "write test start";
-	s_addr <= std_logic_vector(to_unsigned(9, 32));
-	s_writedata <= std_logic_vector(to_unsigned(8193, 32));
-	s_write <= '1';
+    request_cpu(true, 9, x"00002001");
+	-- s_addr <= std_logic_vector(to_unsigned(9, 32));
+	-- s_writedata <= std_logic_vector(to_unsigned(8193, 32));
+	-- s_write <= '1';
+	--
+ --    wait until s_waitrequest = '1';
+ --    wait until s_waitrequest = '0';
+	-- s_write <= '0';
+	-- s_read <= '0';
+	--
+ --    wait for 1 * clk_period;
 
-    wait until s_waitrequest = '1';
-    wait until s_waitrequest = '0';
-	s_write <= '0';
-	s_read <= '0';
-
-    wait for 1 * clk_period;
-
-	s_read <= '1';
-    wait until s_waitrequest = '1';
-    wait until s_waitrequest = '0';
-    wait for 1 * clk_period;
-	s_read <= '0';
+    request_cpu(false, 9, x"00000000");
 
     wait for 5 * clk_period;
 	report "Should be done now";
