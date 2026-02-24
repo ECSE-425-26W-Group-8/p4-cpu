@@ -165,33 +165,47 @@ begin
 	
 	request_cpu(false, 0, x"00000000");	-- read&!valid&!dirty&!equal	
 	-- read from a bad addr	- what do we return here? - should pull from whatever is in memory
+	report "should be pulling a random value from memory";
 	wait until rising_edge(clk);
 	request_cpu(true, 0, x"10101010");	-- write valid&!dirty&equal
+	report "write to cache";
 	wait until rising_edge(clk);
 	request_cpu(false, 0, x"00000000");	-- read&valid&dirty&equal
-	assert s_readdata = x"" report "read success" severity error;
+	assert s_readdata = x"10101010" report "read success" severity error;
 	wait until rising_edge(clk);
 	request_cpu(true, 0, x"00000000");	-- write&valid&dirty&equal	- should just overwrite
+	report "should just overwrite current value currently in cache";
 	wait until rising_edge(clk);
 	request_cpu(false, 0, x"00000000");	-- already tested
+	assert s_readdata = x"00000000" report "read overwrite success" severity error;
 	wait until rising_edge(clk);
 	-- addr = 65024 is bin1111111000000000 which maps to 0
 	request_cpu(true, 65024, x"11111111");	-- write&valid&dirty&!equal	- should write to mem and then write to cache
 	wait until rising_edge(clk);
+	report "we should have written to memory and written to cache";
+	request_cpu(false, 0, x"00000000");
+	assert s_readdata = x"00000000" report "we should have the same value that we just put into mem" severity error;
 	
 	request_cpu(false, 4, x"00000000");	-- read&!valid&!dirty&!equal
+	report "should return a rand mem value";
 	wait until rising_edge(clk);
 	request_cpu(false, 4, x"00000000");	-- read&valid&!dirty&equal
+	report "we should have the same value that just came out";
 	wait until rising_edge(clk);
 	request_cpu(true, 4, x"00000000");	-- write&valid&!dirty&!equal - we should NOT write to mem bc not dirty
+	report "assure that we AREN'T writing to MM because this isn't dirty";
 	wait until rising_edge(clk);
 	request_cpu(false, 65028, x"00000000");	-- read&valid&dirty&!equal - should bring in new mem
+	report "this should be reading a random value from mem that is not the one we just wrote";
 	wait until rising_edge(clk);
 	request_cpu(true, 4, x"11111111");	-- write&valid&!dirty&!equal
+	report "we are writing to a non dirty frame in cache";
 	wait until rising_edge(clk);
 	request_cpu(false, 65028, x"11111111");	-- read valid&dirty&!equal
+	report "we should be reading from MM";
 	wait until rising_edge(clk);
 	request_cpu(false, 4, x"00000000");	-- read valid&!dirty&!equal	- we need to pull from mem and not write back
+	report "we need to pull a value from mem and not write back to mem";
 	wait until rising_edge(clk);
 	
 
