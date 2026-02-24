@@ -19,10 +19,11 @@ entity cache_fsm is
         hit        : in std_logic;
 
         -- FSM -> CPU / internal
-        s_waitrequest : out std_logic;
-        writeback     : out std_logic;
-        m_index       : out integer := 0;
-        read_byte     : out std_logic;
+        s_waitrequest   : out std_logic;
+        read_data_ready : out std_logic;
+        writeback       : out std_logic;
+        m_index         : out integer := 0;
+        read_byte       : out std_logic;
 
         -- Memory -> FSM
         m_waitrequest : in std_logic;
@@ -210,6 +211,8 @@ begin
     set_dirty <= '1' when state = WRITE_DATA else '0';
 
     read_byte <= '1' when (state = REQ_MEM or state = REQ_MEM_WAIT) and m_waitrequest = '0' else '0';
+
+    read_data_ready <= '1' when state = READ_DATA else '0';
 
     m_index <= fsm_mem_index;
     

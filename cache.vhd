@@ -47,6 +47,7 @@ architecture arch of cache is
 
         -- FSM -> CPU / internal
         s_waitrequest : out std_logic;
+        read_data_ready : out std_logic;
         writeback     : out std_logic;
         m_index       : out integer := 0;
         read_byte     : out std_logic;
@@ -99,6 +100,7 @@ signal dirty_miss  : std_logic;
 signal fsm_wait       : std_logic;
 signal fsm_m_read     : std_logic;
 signal fsm_m_write    : std_logic;
+signal fsm_read_data_ready : std_logic;
 signal fsm_writeback  : std_logic;
 signal fsm_m_index    : integer range 0 to 15;
 signal fsm_read_byte  : std_logic;
@@ -163,6 +165,7 @@ port map(
   dirty_miss    => dirty_miss,
   hit           => hit,
   s_waitrequest => fsm_wait,
+  read_data_ready => fsm_read_data_ready,
   writeback     => fsm_writeback,
   m_index       => fsm_m_index,
   read_byte     => fsm_read_byte,
@@ -209,11 +212,17 @@ clean_miss <= '1' when (miss='1' and (cur_block.valid='0' or cur_block.dirty='0'
 -- Read hit mux 
 -- word_off "00" should select word 0 (lowest word in block)
 --------------------------------------------------------------------
-with req_wordoff select
-    s_readdata <= cur_block.block_line(0) when "00",
-                  cur_block.block_line(1) when "01",
-                  cur_block.block_line(2) when "10",
-                  cur_block.block_line(3) when others;
+with fsm_read_data_ready&req_wordoff select
+    s_readdata <= cur_block.block_line(0) when "100",
+                  cur_block.block_line(1) when "101",
+                  cur_block.block_line(2) when "110",
+                  cur_block.block_line(3) when "111",
+                  (others => 'Z') when others;
+-- with req_wordoff select
+--     s_readdata <= cur_block.block_line(0) when "00",
+--                   cur_block.block_line(1) when "01",
+--                   cur_block.block_line(2) when "10",
+--                   cur_block.block_line(3) when others;
 
 --------------------------------------------------------------------
 -- Build new line for write hit
