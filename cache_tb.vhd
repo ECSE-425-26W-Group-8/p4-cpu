@@ -165,26 +165,40 @@ begin
 	
 	request_cpu(false, 0, x"00000000");	-- read&!valid&!dirty&!equal	
 	-- read from a bad addr	- what do we return here? - should pull from whatever is in memory
+	wait until rising_edge(clk);
 	request_cpu(true, 0, x"10101010");	-- write valid&!dirty&equal
+	wait until rising_edge(clk);
 	request_cpu(false, 0, x"00000000");	-- read&valid&dirty&equal
+	assert s_readdata = x"" report "read success" severity error;
+	wait until rising_edge(clk);
 	request_cpu(true, 0, x"00000000");	-- write&valid&dirty&equal	- should just overwrite
+	wait until rising_edge(clk);
 	request_cpu(false, 0, x"00000000");	-- already tested
+	wait until rising_edge(clk);
 	-- addr = 65024 is bin1111111000000000 which maps to 0
 	request_cpu(true, 65024, x"11111111");	-- write&valid&dirty&!equal	- should write to mem and then write to cache
+	wait until rising_edge(clk);
 	
-	request_cpu(false, 1, x"00000000");	-- read&!valid&!dirty&!equal
-	request_cpu(false, 1, x"00000000");	-- read&valid&!dirty&equal
-	request_cpu(true, 1, x"00000000");	-- write&valid&!dirty&!equal - we should NOT write to mem bc not dirty
-	request_cpu(false, DIFFTAG_1, x"00000000");	-- read&valid&dirty&!equal - should bring in new mem
-	request_cpu(true, 1, x"11111111");	-- write&valid&!dirty&!equal
-	request_cpu(false, DIFFTAG_1, x"11111111");	-- read valid&dirty&!equal
-	request_cpu(false, 1, x"00000000");	-- read valid&!dirty&!equal	- we need to pull from mem and not write back
+	request_cpu(false, 4, x"00000000");	-- read&!valid&!dirty&!equal
+	wait until rising_edge(clk);
+	request_cpu(false, 4, x"00000000");	-- read&valid&!dirty&equal
+	wait until rising_edge(clk);
+	request_cpu(true, 4, x"00000000");	-- write&valid&!dirty&!equal - we should NOT write to mem bc not dirty
+	wait until rising_edge(clk);
+	request_cpu(false, 65028, x"00000000");	-- read&valid&dirty&!equal - should bring in new mem
+	wait until rising_edge(clk);
+	request_cpu(true, 4, x"11111111");	-- write&valid&!dirty&!equal
+	wait until rising_edge(clk);
+	request_cpu(false, 65028, x"11111111");	-- read valid&dirty&!equal
+	wait until rising_edge(clk);
+	request_cpu(false, 4, x"00000000");	-- read valid&!dirty&!equal	- we need to pull from mem and not write back
+	wait until rising_edge(clk);
 	
 
     wait for 2 * clk_period;
 	report "Should be done now";
 	sim_done <= true;
-	--std.env.stop;
+	std.env.stop;
 	
 	wait;
 end process;

@@ -47,4 +47,4 @@ wave zoom full
 # Run simulation
 run 1 ns
 set NumericStdNoWarnings 0
-run 500 ns
+run 5 ms
