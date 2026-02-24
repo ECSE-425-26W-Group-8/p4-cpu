@@ -161,8 +161,6 @@ begin
 	wait until rising_edge(clk);
 	report "write test start";
 	
--- CONVERT THE ADDRESSES TO ACTUALLY WHAT WE WANT
-	
 	request_cpu(false, 0, x"00000000");	-- read&!valid&!dirty&!equal	
 	-- read from a bad addr	- what do we return here? - should pull from whatever is in memory
 	report "should be pulling a random value from memory";
@@ -220,16 +218,3 @@ begin
 end process;
 	
 end;
-
--- assure:
-	-- cache looks how we want it to at the end of each test
-	-- should I check to make sure we aren't sending things to memory and
-		-- waiting when we don't have to send to mem?
-
--- additionally:
-	-- a slave device should assert waitrequest when in reset
-		-- check the assignment details
-	-- read & write signals at same time?
-	-- read twice, write twice in a row
-		
--- we are reading and writing 
