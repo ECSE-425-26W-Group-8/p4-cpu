@@ -207,6 +207,8 @@ begin
 	request_cpu(false, 4, x"00000000");	-- read valid&!dirty&!equal	- we need to pull from mem and not write back
 	report "we need to pull a value from mem and not write back to mem";
 	wait until rising_edge(clk);
+	request_cpu(true, 20, x"11111111");	-- write&!valid&dirty&!equal
+	report "making sure that we handle indexing and things correctly in the cache";
 	
 
     wait for 2 * clk_period;
