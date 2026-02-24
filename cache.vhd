@@ -212,17 +212,11 @@ clean_miss <= '1' when (miss='1' and (cur_block.valid='0' or cur_block.dirty='0'
 -- Read hit mux 
 -- word_off "00" should select word 0 (lowest word in block)
 --------------------------------------------------------------------
-with fsm_read_data_ready&req_wordoff select
-    s_readdata <= cur_block.block_line(0) when "100",
-                  cur_block.block_line(1) when "101",
-                  cur_block.block_line(2) when "110",
-                  cur_block.block_line(3) when "111",
-                  (others => 'Z') when others;
--- with req_wordoff select
---     s_readdata <= cur_block.block_line(0) when "00",
---                   cur_block.block_line(1) when "01",
---                   cur_block.block_line(2) when "10",
---                   cur_block.block_line(3) when others;
+s_readdata <= (others =>'Z') when fsm_read_data_ready = '0' else
+              cur_block.block_line(0) when  req_wordoff = "00" else
+              cur_block.block_line(1) when  req_wordoff = "01" else
+              cur_block.block_line(2) when  req_wordoff = "10" else
+              cur_block.block_line(3);
 
 --------------------------------------------------------------------
 -- Build new line for write hit
