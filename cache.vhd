@@ -218,9 +218,8 @@ with req_wordoff select
 --------------------------------------------------------------------
 -- Build new line for write hit
 --------------------------------------------------------------------
-next_line <= cur_block.block_line;
 next_line_generate: for i in 0 to 3 generate
-    next_line(i) <= req_wdata when to_integer(unsigned(req_wordoff)) = i else next_line(i);
+    next_line(i) <= req_wdata when to_integer(unsigned(req_wordoff)) = i else cur_block.block_line(i);
 end generate next_line_generate;
     
 -----------------------------------------------------------------------
@@ -274,8 +273,10 @@ refill_words(2) <= refill_line(95 downto 64);
 refill_words(3) <= refill_line(127 downto 96);
 
 
+
 new_line <= next_line     when (fsm_data_we='1' and fsm_set_dirty='1') else
-            refill_words  when (fsm_data_we='1' and fsm_set_dirty='0');
+            refill_words  when (fsm_data_we='1' and fsm_set_dirty='0') else
+            (others => ( others => '0'));
 new_tag  <= req_tag;
 
 end arch;
