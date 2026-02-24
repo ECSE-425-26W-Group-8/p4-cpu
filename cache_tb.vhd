@@ -95,7 +95,7 @@ port map(
 );
 
 MEM : memory
-generic map (ram_size => 15)
+generic map (ram_size => 32768)
 port map (
     clock => clk,
     writedata => m_writedata,
@@ -135,13 +135,21 @@ begin
 	s_addr <= std_logic_vector(to_unsigned(9, 32));
 	s_writedata <= std_logic_vector(to_unsigned(8193, 32));
 	s_write <= '1';
-	--if s_waitrequest = '1' then
-		--wait until s_waitrequest = '0';
-	--end if;
-	wait for clk_period * 4;
-	wait until rising_edge(clk);
+
+    wait until s_waitrequest = '1';
+    wait until s_waitrequest = '0';
 	s_write <= '0';
 	s_read <= '0';
+
+    wait for 1 * clk_period;
+
+	s_read <= '1';
+    wait until s_waitrequest = '1';
+    wait until s_waitrequest = '0';
+    wait for 1 * clk_period;
+	s_read <= '0';
+
+    wait for 5 * clk_period;
 	report "Should be done now";
 	sim_done <= true;
 	--std.env.stop;
