@@ -158,25 +158,30 @@ begin
 	reset <= '0';
 	wait until rising_edge(clk);
 	report "Reset Complete";
-
--- 2. test to make sure that I know what its supposed to look like
 	wait until rising_edge(clk);
 	report "write test start";
-    request_cpu(true, 9, x"00002001");
-	-- s_addr <= std_logic_vector(to_unsigned(9, 32));
-	-- s_writedata <= std_logic_vector(to_unsigned(8193, 32));
-	-- s_write <= '1';
-	--
- --    wait until s_waitrequest = '1';
- --    wait until s_waitrequest = '0';
-	-- s_write <= '0';
-	-- s_read <= '0';
-	--
- --    wait for 1 * clk_period;
+	
+-- CONVERT THE ADDRESSES TO ACTUALLY WHAT WE WANT
+	
+	request_cpu(false, 0, x"00000000");	-- read&!valid&!dirty&!equal	
+	-- read from a bad addr	- what do we return here? - should pull from whatever is in memory
+	request_cpu(true, 0, x"10101010");	-- write valid&!dirty&equal
+	request_cpu(false, 0, x"00000000");	-- read&valid&dirty&equal
+	request_cpu(true, 0, x"00000000");	-- write&valid&dirty&equal	- should just overwrite
+	request_cpu(false, 0, x"00000000");	-- already tested
+	-- addr = 65024 is bin1111111000000000 which maps to 0
+	request_cpu(true, 65024, x"11111111");	-- write&valid&dirty&!equal	- should write to mem and then write to cache
+	
+	request_cpu(false, 1, x"00000000");	-- read&!valid&!dirty&!equal
+	request_cpu(false, 1, x"00000000");	-- read&valid&!dirty&equal
+	request_cpu(true, 1, x"00000000");	-- write&valid&!dirty&!equal - we should NOT write to mem bc not dirty
+	request_cpu(false, DIFFTAG_1, x"00000000");	-- read&valid&dirty&!equal - should bring in new mem
+	request_cpu(true, 1, x"11111111");	-- write&valid&!dirty&!equal
+	request_cpu(false, DIFFTAG_1, x"11111111");	-- read valid&dirty&!equal
+	request_cpu(false, 1, x"00000000");	-- read valid&!dirty&!equal	- we need to pull from mem and not write back
+	
 
-    request_cpu(false, 9, x"00000000");
-
-    wait for 5 * clk_period;
+    wait for 2 * clk_period;
 	report "Should be done now";
 	sim_done <= true;
 	--std.env.stop;

@@ -12,6 +12,9 @@ vcom -2008 -work work cache_tb.vhd
 # Initialize simulation
 vsim -voptargs="+acc" work.cache_tb
 
+set NumericStdNoWarnings 1
+set StdArithNoWarnings 1
+
 # Sys signals
 add wave -divider "System"
 add wave -label reset /cache_tb/reset
@@ -42,4 +45,6 @@ add wave -label m_waitrequest /cache_tb/m_waitrequest
 wave zoom full
 
 # Run simulation
-run 50 ns
+run 1 ns
+set NumericStdNoWarnings 0
+run 500 ns
