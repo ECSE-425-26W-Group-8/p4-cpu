@@ -54,11 +54,11 @@ signal reset : std_logic := '0';
 signal clk : std_logic := '0';
 constant clk_period : time := 1 ns;
 
-signal s_addr : std_logic_vector (31 downto 0);
-signal s_read : std_logic;
+signal s_addr : std_logic_vector (31 downto 0) := (others => '0');
+signal s_read : std_logic := '0';
 signal s_readdata : std_logic_vector (31 downto 0);
-signal s_write : std_logic;
-signal s_writedata : std_logic_vector (31 downto 0);
+signal s_write : std_logic := '0';
+signal s_writedata : std_logic_vector (31 downto 0) := (others => '0');
 signal s_waitrequest : std_logic;
 
 signal m_addr : integer range 0 to 2147483647;
