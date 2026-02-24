@@ -218,7 +218,8 @@ begin
     
     fsm_next_mem_index <= fsm_mem_index + 1 when state = REQ_MEM_PAUSE or state = WRITE_TO_MEM_PAUSE else
                           0 when 
-                            state /= WRITE_TO_MEM and state /= REQ_MEM and state /= WRITE_TO_MEM_WAIT and state /= REQ_MEM_WAIT
+                          (state /= WRITE_TO_MEM and state /= REQ_MEM and state /= WRITE_TO_MEM_WAIT and state /= REQ_MEM_WAIT) or
+                          (state = WRITE_TO_MEM and fsm_mem_index = 15 and m_waitrequest = '0')
                         else fsm_mem_index;
     -- fsm_next_mem_index <= fsm_mem_index + 1 when 
     --                       (state = WRITE_TO_MEM or state = REQ_MEM or state = WRITE_TO_MEM_WAIT or state = REQ_MEM_WAIT)
