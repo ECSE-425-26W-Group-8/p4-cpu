@@ -90,7 +90,7 @@ architecture behavior of cache_fsm_tb is
     signal sim_done      : boolean := false;
 
     -- Clock period definitions
-    constant clk_period : time := 10 ns;
+    constant clk_period : time := 1 ns;
 
 begin
     -- Instantiate the Unit Under Test (UUT)

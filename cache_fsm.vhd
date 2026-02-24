@@ -42,13 +42,15 @@ architecture rtl of cache_fsm is
     type state_t is (
         IDLE, READ_REQ, READ_DATA,
         WRITE_REQ, WRITE_DATA,
-        WRITE_TO_MEM, WRITE_TO_MEM_WAIT, REQ_MEM, REQ_MEM_WAIT,
+        WRITE_TO_MEM, WRITE_TO_MEM_PAUSE, WRITE_TO_MEM_WAIT,
+        REQ_MEM, REQ_MEM_PAUSE, REQ_MEM_WAIT,
         MEM_TO_CACHE_WRITE
     );
 
     signal state, next_state : state_t := IDLE;
 
     signal fsm_mem_index : integer range 0 to 15 := 0;
+    signal fsm_next_mem_index : integer range 0 to 15 := 0;
 
 begin
     process(clk, reset)
@@ -59,18 +61,19 @@ begin
         elsif rising_edge(clk) then
             state <= next_state;
 
+            fsm_mem_index <= fsm_next_mem_index;
             -- Increment logic: only when memory is ready ('0')
             -- if (state = WRITE_TO_MEM or state = REQ_MEM) and m_waitrequest = '0' then
-            if (state = WRITE_TO_MEM or state = REQ_MEM or state = WRITE_TO_MEM_WAIT or state = REQ_MEM_WAIT) and m_waitrequest = '0' then
-                if fsm_mem_index = 15 then
-                    fsm_mem_index <= 0;
-                else
-                    fsm_mem_index <= fsm_mem_index + 1;
-                end if;
-            -- elsif state /= WRITE_TO_MEM and state /= REQ_MEM then
-            elsif state /= WRITE_TO_MEM and state /= REQ_MEM and state /= WRITE_TO_MEM_WAIT and state /= REQ_MEM_WAIT then
-                fsm_mem_index <= 0; -- Reset when not in burst
-            end if;
+            -- if (state = WRITE_TO_MEM or state = REQ_MEM or state = WRITE_TO_MEM_WAIT or state = REQ_MEM_WAIT) and m_waitrequest = '0' then
+            --     if fsm_mem_index = 15 then
+            --         fsm_mem_index <= 0;
+            --     else
+            --         fsm_mem_index <= fsm_mem_index + 1;
+            --     end if;
+            -- -- elsif state /= WRITE_TO_MEM and state /= REQ_MEM then
+            -- elsif state /= WRITE_TO_MEM and state /= REQ_MEM and state /= WRITE_TO_MEM_WAIT and state /= REQ_MEM_WAIT then
+            --     fsm_mem_index <= 0; -- Reset when not in burst
+            -- end if;
         end if;
     end process;
 
@@ -123,34 +126,66 @@ begin
                 next_state <= IDLE;
 
             when WRITE_TO_MEM =>
-                if m_waitrequest = '1' and fsm_mem_index = 15 then
-                    next_state <= WRITE_TO_MEM_WAIT;
-                    -- next_state <= REQ_MEM;
+                if m_waitrequest = '0' then
+                    if fsm_mem_index = 15 then
+                        next_state <= REQ_MEM;
+                    else
+                        next_state <= WRITE_TO_MEM_PAUSE;
+                    end if;
                 else
                     next_state <= WRITE_TO_MEM;
                 end if;
+                -- if m_waitrequest = '1' and fsm_mem_index = 15 then
+                --     next_state <= WRITE_TO_MEM_WAIT;
+                    -- next_state <= REQ_MEM;
+                -- elsif m_waitrequest <= '1' then
+                --     next_state <= WRITE_TO_MEM;
+                -- else
+                --     next_state <= WRITE_TO_MEM_PAUSE;
+                --     -- next_state <= WRITE_TO_MEM_PAUSE;
 
-            when WRITE_TO_MEM_WAIT =>
-                if m_waitrequest = '0' then
-                    next_state <= REQ_MEM;
-                else
-                    next_state <= WRITE_TO_MEM_WAIT;
-                end if;
+            when WRITE_TO_MEM_PAUSE =>
+                next_state <= WRITE_TO_MEM;
+
+            -- when WRITE_TO_MEM_WAIT =>
+            --     if m_waitrequest = '0' then
+            --         next_state <= REQ_MEM;
+            --     else
+            --         next_state <= WRITE_TO_MEM_WAIT;
+            --     end if;
 
             when REQ_MEM =>
-                if m_waitrequest = '1' and fsm_mem_index = 15 then
-                    next_state <= REQ_MEM_WAIT;  
-                    -- next_state <= MEM_TO_CACHE_WRITE;
+                if m_waitrequest = '0' then
+                    if fsm_mem_index = 15 then
+                        next_state <= MEM_TO_CACHE_WRITE;
+                    else
+                        next_state <= REQ_MEM_PAUSE;
+                    end if;
                 else
                     next_state <= REQ_MEM;
                 end if;
+                -- if m_waitrequest = '0' and fsm_mem_index = 15 then
+                --     next_state <= MEM_TO_CACHE_WRITE;
+                -- -- if m_waitrequest = '1' and fsm_mem_index = 15 then
+                -- --     next_state <= REQ_MEM_WAIT;  
+                --     -- next_state <= MEM_TO_CACHE_WRITE;
+                -- elsif m_waitrequest = '1' then
+                --     next_state <= REQ_MEM;
+                -- else
+                --     -- next_state <= REQ_MEM;
+                --     next_state <= REQ_MEM_PAUSE;
+                -- end if;
 
-            when REQ_MEM_WAIT =>
-                if m_waitrequest = '0' then
-                    next_state <= MEM_TO_CACHE_WRITE;
-                else
-                    next_state <= REQ_MEM_WAIT;
-                end if;
+            when REQ_MEM_PAUSE =>
+                next_state <= REQ_MEM;
+            
+
+            -- when REQ_MEM_WAIT =>
+            --     if m_waitrequest = '0' then
+            --         next_state <= MEM_TO_CACHE_WRITE;
+            --     else
+            --         next_state <= REQ_MEM_WAIT;
+            --     end if;
 
             when MEM_TO_CACHE_WRITE =>
                 case req_vec is
@@ -166,8 +201,9 @@ begin
         end case;
     end process;
     -- outputs 
-    s_waitrequest <= '1' when state = READ_REQ or state = WRITE_REQ or state = WRITE_TO_MEM or state = REQ_MEM or state = MEM_TO_CACHE_WRITE or state = REQ_MEM_WAIT or state = WRITE_TO_MEM_WAIT else '0';
-    m_read <= '1' when state = REQ_MEM and not (fsm_mem_index = 15 and m_waitrequest = '0') else '0';
+    s_waitrequest <= '1' when state = READ_REQ or state = WRITE_REQ or state = WRITE_TO_MEM or state = REQ_MEM or state = MEM_TO_CACHE_WRITE or state = REQ_MEM_WAIT or state = WRITE_TO_MEM_WAIT or state = WRITE_DATA or state = REQ_MEM_PAUSE or state = WRITE_TO_MEM_PAUSE else '0';
+    -- m_read <= '1' when state = REQ_MEM and not (fsm_mem_index = 15 and m_waitrequest = '0') else '0';
+    m_read <= '1' when state = REQ_MEM else '0';
     m_write <= '1' when state = WRITE_TO_MEM and not (fsm_mem_index = 15 and m_waitrequest = '0') else '0';
     writeback <= '1' when state = WRITE_TO_MEM or state = WRITE_TO_MEM_WAIT else '0';
     data_we <= '1' when state = WRITE_DATA or state = MEM_TO_CACHE_WRITE else '0';
@@ -176,5 +212,18 @@ begin
     read_byte <= '1' when (state = REQ_MEM or state = REQ_MEM_WAIT) and m_waitrequest = '0' else '0';
 
     m_index <= fsm_mem_index;
+    
+    fsm_next_mem_index <= fsm_mem_index + 1 when state = REQ_MEM_PAUSE or state = WRITE_TO_MEM_PAUSE else
+                          0 when 
+                            state /= WRITE_TO_MEM and state /= REQ_MEM and state /= WRITE_TO_MEM_WAIT and state /= REQ_MEM_WAIT
+                        else fsm_mem_index;
+    -- fsm_next_mem_index <= fsm_mem_index + 1 when 
+    --                       (state = WRITE_TO_MEM or state = REQ_MEM or state = WRITE_TO_MEM_WAIT or state = REQ_MEM_WAIT)
+    --                       and m_waitrequest = '0'
+    --                       and fsm_mem_index < 15
+    --                   else 0 when
+    --                       state /= WRITE_TO_MEM and state /= REQ_MEM and state /= WRITE_TO_MEM_WAIT and state /= REQ_MEM_WAIT
+    --                   else fsm_mem_index;
+
 
 end architecture rtl;
