@@ -1,1 +1,3 @@
-mem load -filltype value -filldata 0 -format bin /textio_test_tb/dut/ram_block
+proc {mem_path}{
+    mem load -filltype value -filldata 0 -format bin $mem_path
+}

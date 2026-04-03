@@ -33,4 +33,3 @@ proc dump_mem {mem_path file_path num_words {start_addr 0}} {
     close $fp
     echo "--- Dumped $num_words instructions ([expr $num_words * 4] bytes) to $file_path ---"
 }
-dump_mem /textio_test_tb/dut/ram_block out.txt 8192
