@@ -30,12 +30,12 @@ BEGIN
 	--This is the main section of the SRAM model
 	mem_process: PROCESS (clock)
 	BEGIN
-		--This is a cheap trick to initialize the SRAM in simulation
-		IF(now < 1 ps)THEN
-			For i in 0 to ram_size-1 LOOP
-				ram_block(i) <= std_logic_vector(to_unsigned(i,8));
-			END LOOP;
-		end if;
+		-- --This is a cheap trick to initialize the SRAM in simulation
+		-- IF(now < 1 ps)THEN
+		-- 	For i in 0 to ram_size-1 LOOP
+		-- 		ram_block(i) <= std_logic_vector(to_unsigned(i,8));
+		-- 	END LOOP;
+		-- end if;
 
 		--This is the actual synthesizable SRAM block
 		IF (clock'event AND clock = '1') THEN
