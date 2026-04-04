@@ -2,7 +2,7 @@
 # Automates the compilation, simulation, and memory loading process.
 
 # 1. Define paths
-set MEM_DIR "Memory Module"
+set MEM_DIR "memory_module"
 set MACHINE_CODE "factorial_hex.txt"
 set OUTFILE "output.txt"
 set TB_ENTITY "textio_test_tb"
