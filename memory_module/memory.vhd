@@ -15,7 +15,7 @@ ENTITY memory IS
 		address: IN INTEGER RANGE 0 TO ram_size-1;
 		memwrite: IN STD_LOGIC;
 		memread: IN STD_LOGIC;
-		readdata: OUT STD_LOGIC_VECTOR (7 DOWNTO 0);
+		readdata: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
 		waitrequest: OUT STD_LOGIC
 	);
 END memory;
@@ -45,7 +45,7 @@ BEGIN
 		read_address_reg <= address;
 		END IF;
 	END PROCESS;
-	readdata <= ram_block(read_address_reg);
+	readdata <= ram_block(read_address_reg+3) & ram_block(read_address_reg+2) & ram_block(read_address_reg+1) & ram_block(read_address_reg);
 
 
 	--The waitrequest signal is used to vary response time in simulation
