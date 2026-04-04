@@ -58,13 +58,7 @@ begin
         end if;
     end process pc_update;
 
-    next_pc_calc: process
-    begin
-        if branchTake_EX_IF_LN = '1' then
-            next_pc <= result_EX_IF_REGLN;
-        else
-            next_pc <= std_logic_vector(unsigned(pc) + 4);
-        end if;
-    end process next_pc_calc;
+    next_pc <= result_EX_IF_REGLN when branchTake_EX_IF_LN = '1' else
+               std_logic_vector(unsigned(pc) + 4) ;
 
 end Behavioral;
