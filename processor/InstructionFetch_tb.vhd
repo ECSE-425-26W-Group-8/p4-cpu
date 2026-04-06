@@ -3,27 +3,43 @@
 -- Testbench for the IF stage of the 5-stage RISC-V pipeline.
 --
 -- Assumptions:
---   - Memory is pre-loaded by IF_sim.tcl BEFORE `run` is called,
---     so no initial wait is needed; assertions start from the first rising edge.
---   - factorial_hex.txt is used as the instruction source.
+--   - Memory is pre-loaded by IF_sim.tcl BEFORE `run` is called.
+--   - factorial_bin.txt is the instruction source.
 --     Known instruction values (little-endian reassembly):
 --       PC 0x00 -> 0x00500513
 --       PC 0x04 -> 0x010000EF
 --       PC 0x08 -> 0x0000006F
 --       PC 0x0C -> 0x00A002B3
 --       PC 0x10 -> 0x00100513
---       PC 0x20 -> (branch target used in Test 2)
+--
+-- Sampling convention (pipeline register outputs):
+--   addr_IF_ID_LNREG and inst_IF_ID_LNREG are outputs of the IF/ID pipeline
+--   register — they only update on rising edges.
+--
+--   With mem_delay = 0.5 ns < clock_period = 1 ns, the memory delivers valid
+--   data half a cycle before every rising edge. waitrequest never causes a
+--   stall, so the register latches a new valid instruction on every rising edge.
+--
+--   Sampling point: FALLING EDGE
+--     - After the preceding rising edge has latched the new value (settled).
+--     - Before the next rising edge overwrites it (stable hold window).
+--     No stall-skip is needed; one falling edge per check suffices.
+--
+-- P&H convention — IF/ID register stores {NPC, IR}:
+--   addr_IF_ID_LNREG = NPC = PC+4 (used by ID stage for branch target calc)
+--   inst_IF_ID_LNREG = IR  = instruction fetched at PC
+--   These are intentionally misaligned by +4: addr is one ahead of the
+--   instruction's fetch address, not a bug.
 --
 -- Test cases:
 --   Test 1 - Sequential fetch (no branch):
---       addr_IF_ID_LNREG increments by 4 each cycle.
---       inst_IF_ID_LNREG matches the instruction at that address.
+--       addr_IF_ID_LNREG holds NPC (fetch addr + 4) on each falling edge.
+--       inst_IF_ID_LNREG matches the instruction at the fetch address.
 --   Test 2 - Branch taken:
 --       branchTake_EX_IF_LN = '1', result_EX_IF_REGLN = 0x00000020.
---       addr_IF_ID_LNREG must jump to 0x00000020.
+--       addr_IF_ID_LNREG must latch the branch target.
 --   Test 3 - Sequential resume after branch:
---       branchTake_EX_IF_LN = '0' again.
---       addr_IF_ID_LNREG continues as 0x24, 0x28.
+--       branchTake_EX_IF_LN = '0'. addr_IF_ID_LNREG continues from 0x24.
 -- =============================================================================
 
 library ieee;
@@ -49,8 +65,7 @@ architecture sim of InstructionFetch_tb is
     end component;
 
     -- -------------------------------------------------------------------------
-    -- Clock
-    -- Must match the memory component's clock_period generic (default 1 ns).
+    -- Clock — must match the memory component's clock_period generic (1 ns).
     -- -------------------------------------------------------------------------
     constant CLK_PERIOD : time := 1 ns;
     signal clk : std_logic := '0';
@@ -89,58 +104,49 @@ begin
     -- -------------------------------------------------------------------------
     -- Stimulus and verification
     --
-    -- Timing convention:
-    --   Stimuli are applied combinationally (before the rising edge).
-    --   Outputs are sampled CLK_PERIOD/4 after the rising edge, giving all
-    --   clocked and combinational logic time to settle within the same cycle.
+    -- Pattern: stimuli are applied combinationally between falling edges.
+    -- Each `wait until falling_edge(clk)` samples the value latched at the
+    -- immediately preceding rising edge. One falling edge = one pipeline cycle.
     -- -------------------------------------------------------------------------
     stim_process : process
     begin
 
         -- =====================================================================
         -- TEST 1: Sequential fetch — no branch
-        -- Expected: PC starts at 0x00000000, increments by 4 each cycle.
+        -- Expected: addr increments by 4 each cycle; inst matches memory.
         -- =====================================================================
         report "=== TEST 1: Sequential Fetch (no branch) ===" severity note;
         branchTake_EX_IF_LN <= '0';
 
-        -- Cycle 1: PC = 0x00000000
-        wait until rising_edge(clk);
-        wait for CLK_PERIOD / 4;
-
-        assert addr_IF_ID_LNREG = x"00000000"
-            report "FAIL T1C1 addr: expected 0x00000000, got 0x"
+        -- Falling edge 1: IF/ID latched NPC=0x04 and IR=instruction@0x00.
+        -- addr holds NPC (PC+4), not the fetch address, per P&H convention.
+        wait until falling_edge(clk);
+        assert addr_IF_ID_LNREG = x"00000004"
+            report "FAIL T1C1 addr: expected NPC 0x00000004, got 0x"
                    & to_hstring(addr_IF_ID_LNREG)
             severity error;
-
         assert inst_IF_ID_LNREG = x"00500513"
             report "FAIL T1C1 inst: expected 0x00500513, got 0x"
                    & to_hstring(inst_IF_ID_LNREG)
             severity error;
 
-        -- Cycle 2: PC = 0x00000004
-        wait until rising_edge(clk);
-        wait for CLK_PERIOD / 4;
-
-        assert addr_IF_ID_LNREG = x"00000004"
-            report "FAIL T1C2 addr: expected 0x00000004, got 0x"
+        -- Falling edge 2: NPC=0x08, IR=instruction@0x04.
+        wait until falling_edge(clk);
+        assert addr_IF_ID_LNREG = x"00000008"
+            report "FAIL T1C2 addr: expected NPC 0x00000008, got 0x"
                    & to_hstring(addr_IF_ID_LNREG)
             severity error;
-
         assert inst_IF_ID_LNREG = x"010000EF"
             report "FAIL T1C2 inst: expected 0x010000EF, got 0x"
                    & to_hstring(inst_IF_ID_LNREG)
             severity error;
 
-        -- Cycle 3: PC = 0x00000008
-        wait until rising_edge(clk);
-        wait for CLK_PERIOD / 4;
-
-        assert addr_IF_ID_LNREG = x"00000008"
-            report "FAIL T1C3 addr: expected 0x00000008, got 0x"
+        -- Falling edge 3: NPC=0x0C, IR=instruction@0x08.
+        wait until falling_edge(clk);
+        assert addr_IF_ID_LNREG = x"0000000C"
+            report "FAIL T1C3 addr: expected NPC 0x0000000C, got 0x"
                    & to_hstring(addr_IF_ID_LNREG)
             severity error;
-
         assert inst_IF_ID_LNREG = x"0000006F"
             report "FAIL T1C3 inst: expected 0x0000006F, got 0x"
                    & to_hstring(inst_IF_ID_LNREG)
@@ -150,47 +156,39 @@ begin
 
         -- =====================================================================
         -- TEST 2: Branch taken
-        -- Drive branchTake = '1' and a target address before the rising edge.
-        -- Expected: on the next rising edge, PC jumps to the branch target.
+        -- Stimuli applied here (between falling edges) are visible to the
+        -- combinational next_pc logic before the next rising edge, so the
+        -- register latches the branch target on that rising edge.
         -- =====================================================================
         report "=== TEST 2: Branch Taken ===" severity note;
         branchTake_EX_IF_LN <= '1';
-        result_EX_IF_REGLN  <= x"00000020";   -- branch to address 0x20
+        result_EX_IF_REGLN  <= x"00000020";
 
-        wait until rising_edge(clk);
-        wait for CLK_PERIOD / 4;
-
+        -- Falling edge: register latched addr=0x20 (branch target).
+        wait until falling_edge(clk);
         assert addr_IF_ID_LNREG = x"00000020"
             report "FAIL T2 addr: expected branch target 0x00000020, got 0x"
                    & to_hstring(addr_IF_ID_LNREG)
             severity error;
 
-        -- inst_IF_ID_LNREG should carry whatever is at address 0x20 in memory.
-        -- Not asserting a specific value here since factorial_hex.txt contents
-        -- at that offset are not predefined in this testbench.
-
         report "TEST 2 complete." severity note;
 
         -- =====================================================================
         -- TEST 3: Sequential resume after branch
-        -- Deassert branch. PC should continue from 0x24.
+        -- Deassert branch; PC continues from 0x24.
         -- =====================================================================
         report "=== TEST 3: Sequential Resume After Branch ===" severity note;
         branchTake_EX_IF_LN <= '0';
 
-        -- Cycle after branch: PC = 0x00000024
-        wait until rising_edge(clk);
-        wait for CLK_PERIOD / 4;
-
+        -- Falling edge: register latched addr=0x24.
+        wait until falling_edge(clk);
         assert addr_IF_ID_LNREG = x"00000024"
             report "FAIL T3C1 addr: expected 0x00000024, got 0x"
                    & to_hstring(addr_IF_ID_LNREG)
             severity error;
 
-        -- One more cycle: PC = 0x00000028
-        wait until rising_edge(clk);
-        wait for CLK_PERIOD / 4;
-
+        -- Falling edge: register latched addr=0x28.
+        wait until falling_edge(clk);
         assert addr_IF_ID_LNREG = x"00000028"
             report "FAIL T3C2 addr: expected 0x00000028, got 0x"
                    & to_hstring(addr_IF_ID_LNREG)

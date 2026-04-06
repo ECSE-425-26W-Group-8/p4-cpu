@@ -6,7 +6,7 @@ entity InstructionFetch is
 port(
 	result_EX_IF_REGLN 		: in std_logic_vector(31 downto 0 );
 	branchTake_EX_IF_LN 	: in std_logic;
-	addr_IF_ID_LNREG 		: out std_logic_vector(31 downto 0);
+	pc_IF_ID_LNREG 		: out std_logic_vector(31 downto 0);
 	inst_IF_ID_LNREG 		: out std_logic_vector(31 downto 0);
     clk                     : in std_logic
 ); 
@@ -28,7 +28,7 @@ architecture Behavioral of InstructionFetch is
     component memory is 
     GENERIC(
         ram_size : INTEGER := 32768;
-        mem_delay : time := 1 ns;
+        mem_delay : time := 0.5 ns;
         clock_period : time := 1 ns
     );
     PORT (
@@ -68,6 +68,6 @@ begin
                std_logic_vector(unsigned(pc) + 4) ;
 
     inst_IF_ID_LNREG <= s_instruction;
-    addr_IF_ID_LNREG <= pc;
+    pc_IF_ID_LNREG <= pc;
 
 end Behavioral;

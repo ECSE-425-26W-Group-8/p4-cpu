@@ -40,22 +40,21 @@ vsim -voptargs="+acc" $TB_ENTITY
 # 4. Wave window setup
 # All signals are visible; internal DUT signals exposed via +acc.
 # -----------------------------------------------------------------------------
-add wave -divider "--- Testbench Inputs ---"
-add wave -noupdate                        /$TB_ENTITY/clk
-add wave -noupdate                        /$TB_ENTITY/branchTake_EX_IF_LN
-add wave -noupdate -radix hex             /$TB_ENTITY/result_EX_IF_REGLN
+add wave -divider "Testbench Inputs"
+add wave -label clk             -noupdate                   /$TB_ENTITY/clk
+add wave -label "b taken"       -noupdate                   /$TB_ENTITY/branchTake_EX_IF_LN
+add wave -label "b target"      -noupdate -radix hex        /$TB_ENTITY/result_EX_IF_REGLN
 
-add wave -divider "--- Pipeline Outputs ---"
-add wave -noupdate -radix hex             /$TB_ENTITY/addr_IF_ID_LNREG
-add wave -noupdate -radix hex             /$TB_ENTITY/inst_IF_ID_LNREG
+add wave -divider "Pipeline Outputs"
+add wave -label "pc addr"       -noupdate -radix hex        /$TB_ENTITY/addr_IF_ID_LNREG
+add wave -label "instruction"   -noupdate -radix hex        /$TB_ENTITY/inst_IF_ID_LNREG
 
-add wave -divider "--- DUT Internals ---"
-add wave -noupdate -radix hex             /$TB_ENTITY/dut/pc
-add wave -noupdate -radix hex             /$TB_ENTITY/dut/next_pc
-add wave -noupdate -radix unsigned        /$TB_ENTITY/dut/int_pc
-add wave -noupdate                        /$TB_ENTITY/dut/s_memread
-add wave -noupdate                        /$TB_ENTITY/dut/s_waitrequest
-add wave -noupdate -radix hex             /$TB_ENTITY/dut/s_instruction
+add wave -divider "DUT Internals"
+add wave -label pc              -noupdate -radix hex        /$TB_ENTITY/dut/pc
+add wave -label "next pc"       -noupdate -radix hex        /$TB_ENTITY/dut/next_pc
+add wave -label "int pc"        -noupdate -radix unsigned   /$TB_ENTITY/dut/int_pc
+add wave -label "wait request"  -noupdate                   /$TB_ENTITY/dut/s_waitrequest
+add wave -label "instruction"   -noupdate -radix hex        /$TB_ENTITY/dut/s_instruction
 
 # -----------------------------------------------------------------------------
 # 5. Load instructions into memory
