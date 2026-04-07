@@ -1,13 +1,17 @@
-# load_mem.tcl
-# 
-# This script loads a 32-bit Hex instruction file into an 8-bit wide 
-# ModelSim memory array using Little-Endian mapping (Byte 0 at lowest address).
+# ################################################################################
 #
-# Usage in ModelSim Console:
-# 1. source load_mem.tcl
-# 2. load_riscv_hex "factorial_hex.txt" "/cache_tb/MEM/ram_block"
-
-
+# Author:      Derrick
+# Date:        04/06/2026
+# Description: Loads the content of a text file with 32 bit word (cpu instructions)
+#               per line into an byte addressable memory.
+#
+#
+# Arguments:
+# * file_path   - path to the text file containing the 32 bit words (cpu instructions).
+# * mem_path    - path to an initialized memory component in the modeslim simulation.
+# * start_addr  - DEFAULT:0 start address from which to start loading memory
+#
+################################################################################
 
 proc load_riscv_bin {file_path mem_path {start_addr 0}} {
     if {[catch {set fp [open $file_path r]} msg]} {
