@@ -20,7 +20,7 @@ architecture Behavioral of InstructionFetch is
     signal s_instruction : STD_LOGIC_VECTOR(31 downto 0);
     signal next_pc : std_logic_vector(31 downto 0);
     signal int_pc : INTEGER := 0;
-    signal s_waitrequest : STD_LOGIC;
+    -- signal s_waitrequest : STD_LOGIC;
     signal s_writedata : std_logic_vector(7 downto 0);
     signal s_memread : STD_LOGIC;
 
@@ -40,8 +40,9 @@ architecture Behavioral of InstructionFetch is
 		address: IN INTEGER RANGE 0 TO ram_size-1;
 		memwrite: IN STD_LOGIC;
 		memread: IN STD_LOGIC;
-		readdata: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
-		waitrequest: OUT STD_LOGIC
+		readdata: OUT STD_LOGIC_VECTOR (31 DOWNTO 0)
+        -- ;
+		-- waitrequest: OUT STD_LOGIC
     );
     end component;
 
@@ -55,8 +56,9 @@ begin
         memread => s_memread,
         memwrite => '0',
         readdata => s_instruction,
-        writedata => s_writedata,
-        waitrequest => s_waitrequest
+        writedata => s_writedata
+        -- ,
+        -- waitrequest => s_waitrequest
     );
 
     

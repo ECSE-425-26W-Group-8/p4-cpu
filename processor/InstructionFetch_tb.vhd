@@ -96,6 +96,15 @@ begin
         report "=== TEST 1: Sequential Fetch (no branch) ===" severity note;
         branchTake_EX_IF_LN <= '0';
 
+        wait for 20 ps;
+        assert pc_IF_ID_LNREG = x"00000000"
+            report "FAIL T1C1 addr: expected NPC 0x00000004, got 0x"
+                   & to_hstring(pc_IF_ID_LNREG)
+            severity error;
+        assert inst_IF_ID_LNREG = x"00500513"
+            report "FAIL T1C1 inst: expected 0x00500513, got 0x"
+                   & to_hstring(inst_IF_ID_LNREG);
+
         -- Falling edge 1: IF/ID latched NPC=0x04 and IR=instruction@0x00.
         -- addr holds NPC (PC+4), not the fetch address, per P&H convention.
         wait until falling_edge(clk);
@@ -103,8 +112,8 @@ begin
             report "FAIL T1C1 addr: expected NPC 0x00000004, got 0x"
                    & to_hstring(pc_IF_ID_LNREG)
             severity error;
-        assert inst_IF_ID_LNREG = x"00500513"
-            report "FAIL T1C1 inst: expected 0x00500513, got 0x"
+        assert inst_IF_ID_LNREG = x"010000EF"
+            report "FAIL T1C2 inst: expected 0x010000EF, got 0x"
                    & to_hstring(inst_IF_ID_LNREG)
             severity error;
 
@@ -114,8 +123,8 @@ begin
             report "FAIL T1C2 addr: expected NPC 0x00000008, got 0x"
                    & to_hstring(pc_IF_ID_LNREG)
             severity error;
-        assert inst_IF_ID_LNREG = x"010000EF"
-            report "FAIL T1C2 inst: expected 0x010000EF, got 0x"
+        assert inst_IF_ID_LNREG = x"0000006F"
+            report "FAIL T1C3 inst: expected 0x0000006F, got 0x"
                    & to_hstring(inst_IF_ID_LNREG)
             severity error;
 
@@ -125,8 +134,8 @@ begin
             report "FAIL T1C3 addr: expected NPC 0x0000000C, got 0x"
                    & to_hstring(pc_IF_ID_LNREG)
             severity error;
-        assert inst_IF_ID_LNREG = x"0000006F"
-            report "FAIL T1C3 inst: expected 0x0000006F, got 0x"
+        assert inst_IF_ID_LNREG = x"00A002B3"
+            report "FAIL T1C3 inst: expected 0x00A002B3, got 0x"
                    & to_hstring(inst_IF_ID_LNREG)
             severity error;
 
