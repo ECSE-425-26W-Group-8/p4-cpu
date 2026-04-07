@@ -32,8 +32,8 @@ port(
     -- control flow signals
 	branch_EX_MEM_REGLN     : in std_logic; -- control flow
 	branch_MEM_WB_LNREG     : out std_logic; -- control flow
-	jump_EX_MEM_REGLN: in std_logic; -- control flow
-	jump_MEM_WB_LNREG: in std_logic -- control flow
+	jump_EX_MEM_REGLN       : in std_logic; -- control flow
+	jump_MEM_WB_LNREG       : out std_logic -- control flow
 
 ); 
 end MEM;
@@ -50,7 +50,7 @@ architecture Behavioral of MEM is
         );
         PORT (
             clock: IN STD_LOGIC;
-            writedata: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+            writedata: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
             address: IN INTEGER RANGE 0 TO ram_size-1;
             memwrite: IN STD_LOGIC;
             memread: IN STD_LOGIC;
