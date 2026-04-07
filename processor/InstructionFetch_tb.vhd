@@ -1,45 +1,17 @@
 -- =============================================================================
 -- InstructionFetch_tb.vhd
 -- Testbench for the IF stage of the 5-stage RISC-V pipeline.
---
--- Assumptions:
---   - Memory is pre-loaded by IF_sim.tcl BEFORE `run` is called.
---   - factorial_bin.txt is the instruction source.
---     Known instruction values (little-endian reassembly):
---       PC 0x00 -> 0x00500513
---       PC 0x04 -> 0x010000EF
---       PC 0x08 -> 0x0000006F
---       PC 0x0C -> 0x00A002B3
---       PC 0x10 -> 0x00100513
---
--- Sampling convention (pipeline register outputs):
---   addr_IF_ID_LNREG and inst_IF_ID_LNREG are outputs of the IF/ID pipeline
---   register — they only update on rising edges.
---
---   With mem_delay = 0.5 ns < clock_period = 1 ns, the memory delivers valid
---   data half a cycle before every rising edge. waitrequest never causes a
---   stall, so the register latches a new valid instruction on every rising edge.
---
---   Sampling point: FALLING EDGE
---     - After the preceding rising edge has latched the new value (settled).
---     - Before the next rising edge overwrites it (stable hold window).
---     No stall-skip is needed; one falling edge per check suffices.
---
--- P&H convention — IF/ID register stores {NPC, IR}:
---   addr_IF_ID_LNREG = NPC = PC+4 (used by ID stage for branch target calc)
---   inst_IF_ID_LNREG = IR  = instruction fetched at PC
---   These are intentionally misaligned by +4: addr is one ahead of the
---   instruction's fetch address, not a bug.
+-- on the factorial.s compiled code
 --
 -- Test cases:
 --   Test 1 - Sequential fetch (no branch):
---       addr_IF_ID_LNREG holds NPC (fetch addr + 4) on each falling edge.
+--       pc_IF_ID_LNREG holds NPC (fetch addr + 4) on each falling edge.
 --       inst_IF_ID_LNREG matches the instruction at the fetch address.
 --   Test 2 - Branch taken:
 --       branchTake_EX_IF_LN = '1', result_EX_IF_REGLN = 0x00000020.
---       addr_IF_ID_LNREG must latch the branch target.
+--       pc_IF_ID_LNREG must latch the branch target.
 --   Test 3 - Sequential resume after branch:
---       branchTake_EX_IF_LN = '0'. addr_IF_ID_LNREG continues from 0x24.
+--       branchTake_EX_IF_LN = '0'. pc_IF_ID_LNREG continues from 0x24.
 -- =============================================================================
 
 library ieee;
@@ -56,11 +28,13 @@ architecture sim of InstructionFetch_tb is
     -- -------------------------------------------------------------------------
     component InstructionFetch is
         port (
-            result_EX_IF_REGLN   : in  std_logic_vector(31 downto 0);
-            branchTake_EX_IF_LN  : in  std_logic;
-            addr_IF_ID_LNREG     : out std_logic_vector(31 downto 0);
-            inst_IF_ID_LNREG     : out std_logic_vector(31 downto 0);
-            clk                  : in  std_logic
+            result_EX_IF_REGLN 		: in std_logic_vector(31 downto 0 );
+            branchTake_EX_IF_LN 	: in std_logic;
+            pc_IF_ID_LNREG 		    : out std_logic_vector(31 downto 0);
+            npc_IF_ID_LNREG         : out std_logic_vector(31 downto 0);
+            inst_IF_ID_LNREG 		: out std_logic_vector(31 downto 0);
+            clk                     : in std_logic;
+            stall                   : in STD_LOGIC
         );
     end component;
 
@@ -75,8 +49,10 @@ architecture sim of InstructionFetch_tb is
     -- -------------------------------------------------------------------------
     signal result_EX_IF_REGLN  : std_logic_vector(31 downto 0) := (others => '0');
     signal branchTake_EX_IF_LN : std_logic := '0';
-    signal addr_IF_ID_LNREG    : std_logic_vector(31 downto 0);
+    signal pc_IF_ID_LNREG      : std_logic_vector(31 downto 0);
+    signal npc_IF_ID_LNREG     : std_logic_vector(31 downto 0);
     signal inst_IF_ID_LNREG    : std_logic_vector(31 downto 0);
+    signal stall               : std_logic;
 
 begin
 
@@ -96,9 +72,11 @@ begin
         port map (
             result_EX_IF_REGLN  => result_EX_IF_REGLN,
             branchTake_EX_IF_LN => branchTake_EX_IF_LN,
-            addr_IF_ID_LNREG    => addr_IF_ID_LNREG,
             inst_IF_ID_LNREG    => inst_IF_ID_LNREG,
-            clk                 => clk
+            pc_IF_ID_LNREG => pc_IF_ID_LNREG,
+            npc_IF_ID_LNREG => npc_IF_ID_LNREG,
+            clk                 => clk,
+            stall               => stall
         );
 
     -- -------------------------------------------------------------------------
@@ -118,37 +96,46 @@ begin
         report "=== TEST 1: Sequential Fetch (no branch) ===" severity note;
         branchTake_EX_IF_LN <= '0';
 
-        -- Falling edge 1: IF/ID latched NPC=0x04 and IR=instruction@0x00.
-        -- addr holds NPC (PC+4), not the fetch address, per P&H convention.
-        wait until falling_edge(clk);
-        assert addr_IF_ID_LNREG = x"00000004"
+        wait for 20 ps;
+        assert pc_IF_ID_LNREG = x"00000000"
             report "FAIL T1C1 addr: expected NPC 0x00000004, got 0x"
-                   & to_hstring(addr_IF_ID_LNREG)
+                   & to_hstring(pc_IF_ID_LNREG)
             severity error;
         assert inst_IF_ID_LNREG = x"00500513"
             report "FAIL T1C1 inst: expected 0x00500513, got 0x"
-                   & to_hstring(inst_IF_ID_LNREG)
-            severity error;
+                   & to_hstring(inst_IF_ID_LNREG);
 
-        -- Falling edge 2: NPC=0x08, IR=instruction@0x04.
+        -- Falling edge 1: IF/ID latched NPC=0x04 and IR=instruction@0x00.
+        -- addr holds NPC (PC+4), not the fetch address, per P&H convention.
         wait until falling_edge(clk);
-        assert addr_IF_ID_LNREG = x"00000008"
-            report "FAIL T1C2 addr: expected NPC 0x00000008, got 0x"
-                   & to_hstring(addr_IF_ID_LNREG)
+        assert pc_IF_ID_LNREG = x"00000004"
+            report "FAIL T1C1 addr: expected NPC 0x00000004, got 0x"
+                   & to_hstring(pc_IF_ID_LNREG)
             severity error;
         assert inst_IF_ID_LNREG = x"010000EF"
             report "FAIL T1C2 inst: expected 0x010000EF, got 0x"
                    & to_hstring(inst_IF_ID_LNREG)
             severity error;
 
-        -- Falling edge 3: NPC=0x0C, IR=instruction@0x08.
+        -- Falling edge 2: NPC=0x08, IR=instruction@0x04.
         wait until falling_edge(clk);
-        assert addr_IF_ID_LNREG = x"0000000C"
-            report "FAIL T1C3 addr: expected NPC 0x0000000C, got 0x"
-                   & to_hstring(addr_IF_ID_LNREG)
+        assert pc_IF_ID_LNREG = x"00000008"
+            report "FAIL T1C2 addr: expected NPC 0x00000008, got 0x"
+                   & to_hstring(pc_IF_ID_LNREG)
             severity error;
         assert inst_IF_ID_LNREG = x"0000006F"
             report "FAIL T1C3 inst: expected 0x0000006F, got 0x"
+                   & to_hstring(inst_IF_ID_LNREG)
+            severity error;
+
+        -- Falling edge 3: NPC=0x0C, IR=instruction@0x08.
+        wait until falling_edge(clk);
+        assert pc_IF_ID_LNREG = x"0000000C"
+            report "FAIL T1C3 addr: expected NPC 0x0000000C, got 0x"
+                   & to_hstring(pc_IF_ID_LNREG)
+            severity error;
+        assert inst_IF_ID_LNREG = x"00A002B3"
+            report "FAIL T1C3 inst: expected 0x00A002B3, got 0x"
                    & to_hstring(inst_IF_ID_LNREG)
             severity error;
 
@@ -166,9 +153,9 @@ begin
 
         -- Falling edge: register latched addr=0x20 (branch target).
         wait until falling_edge(clk);
-        assert addr_IF_ID_LNREG = x"00000020"
+        assert pc_IF_ID_LNREG = x"00000020"
             report "FAIL T2 addr: expected branch target 0x00000020, got 0x"
-                   & to_hstring(addr_IF_ID_LNREG)
+                   & to_hstring(pc_IF_ID_LNREG)
             severity error;
 
         report "TEST 2 complete." severity note;
@@ -182,16 +169,16 @@ begin
 
         -- Falling edge: register latched addr=0x24.
         wait until falling_edge(clk);
-        assert addr_IF_ID_LNREG = x"00000024"
+        assert pc_IF_ID_LNREG = x"00000024"
             report "FAIL T3C1 addr: expected 0x00000024, got 0x"
-                   & to_hstring(addr_IF_ID_LNREG)
+                   & to_hstring(pc_IF_ID_LNREG)
             severity error;
 
         -- Falling edge: register latched addr=0x28.
         wait until falling_edge(clk);
-        assert addr_IF_ID_LNREG = x"00000028"
+        assert pc_IF_ID_LNREG = x"00000028"
             report "FAIL T3C2 addr: expected 0x00000028, got 0x"
-                   & to_hstring(addr_IF_ID_LNREG)
+                   & to_hstring(pc_IF_ID_LNREG)
             severity error;
 
         report "TEST 3 complete." severity note;

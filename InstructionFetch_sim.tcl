@@ -11,7 +11,7 @@
 # -----------------------------------------------------------------------------
 set MEM_DIR   "memory_module"
 set PROC_DIR  "processor"
-set MEM_CODE  "factorial_bin.txt"
+set INSTR_CODE  "factorial_bin.txt"
 set TB_ENTITY "InstructionFetch_tb"
 
 # Internal path to the memory array inside the DUT hierarchy.
@@ -46,14 +46,14 @@ add wave -label "b taken"       -noupdate                   /$TB_ENTITY/branchTa
 add wave -label "b target"      -noupdate -radix hex        /$TB_ENTITY/result_EX_IF_REGLN
 
 add wave -divider "Pipeline Outputs"
-add wave -label "pc addr"       -noupdate -radix hex        /$TB_ENTITY/addr_IF_ID_LNREG
+add wave -label "pc"            -noupdate -radix hex        /$TB_ENTITY/pc_IF_ID_LNREG
+add wave -label "npc"            -noupdate -radix hex        /$TB_ENTITY/npc_IF_ID_LNREG
 add wave -label "instruction"   -noupdate -radix hex        /$TB_ENTITY/inst_IF_ID_LNREG
 
 add wave -divider "DUT Internals"
 add wave -label pc              -noupdate -radix hex        /$TB_ENTITY/dut/pc
 add wave -label "next pc"       -noupdate -radix hex        /$TB_ENTITY/dut/next_pc
 add wave -label "int pc"        -noupdate -radix unsigned   /$TB_ENTITY/dut/int_pc
-add wave -label "wait request"  -noupdate                   /$TB_ENTITY/dut/s_waitrequest
 add wave -label "instruction"   -noupdate -radix hex        /$TB_ENTITY/dut/s_instruction
 
 # -----------------------------------------------------------------------------
@@ -67,7 +67,7 @@ source "$MEM_DIR/clear_mem.tcl"
 clear_mem $MEM_PATH
 
 source "$MEM_DIR/load_mem.tcl"
-load_riscv_bin $MEM_CODE $MEM_PATH
+load_riscv_bin $INSTR_CODE $MEM_PATH
 
 # -----------------------------------------------------------------------------
 # 6. Run
