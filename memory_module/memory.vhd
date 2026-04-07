@@ -44,7 +44,7 @@ BEGIN
 	END PROCESS;
     read_address_reg <= address;
     readdata <= ram_block(read_address_reg+3) & ram_block(read_address_reg+2) & ram_block(read_address_reg+1) & ram_block(read_address_reg)
-                when memwrite = '1' else (others => 'Z');
+                when memread = '1' else (others => 'Z');
 
 
 	--The waitrequest signal is used to vary response time in simulation
