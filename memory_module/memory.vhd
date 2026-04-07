@@ -11,7 +11,7 @@ ENTITY memory IS
 	);
 	PORT (
 		clock: IN STD_LOGIC;
-		writedata: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+		writedata: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
 		address: IN INTEGER RANGE 0 TO ram_size-1;
 		memwrite: IN STD_LOGIC;
 		memread: IN STD_LOGIC;
@@ -40,7 +40,10 @@ BEGIN
 
 		--This is the actual synthesizable SRAM block
 		IF (clock'event AND clock = '1') and (memwrite = '1') THEN
-				ram_block(address) <= writedata;
+				ram_block(address) <= writedata(7 downto 0);
+				ram_block(address+1) <= writedata(15 downto 8);
+				ram_block(address+2) <= writedata(23 downto 16);
+				ram_block(address+3) <= writedata(31 downto 24);
 		END IF;
 	END PROCESS;
     read_address_reg <= address;
