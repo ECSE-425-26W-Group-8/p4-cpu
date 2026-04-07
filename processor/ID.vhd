@@ -12,16 +12,17 @@ port(
 	imm_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
 	inst_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
 	inst_MEM_ID_REGLN	: out std_logic_vector(31 downto 0);
-	data_WB_ID_LN		: out std_logic_vector(31 downto 0)
+	data_WB_ID_LN		: out std_logic_vector(31 downto 0);
+    inst_MEM_WB_REGLN   : in std_logic_vector(11 downto 7);
     -- for control process
 	alu_src: out std_logic; -- tell rest of CPU to use imm or reg
 	alu_op : out std_logic_vector(3 downto 0); -- what ALU does
-	mem_read: out std_logic; -- meme access
-	mem_write: out std_logic; -- meme access
+	mem_read: out std_logic; -- mem access
+	mem_write: out std_logic; -- mem access
 	reg_write: out std_logic; -- write to reg
 	branch: out std_logic; -- control flow
 	jump: out std_logic; -- control flow
-	wb_sel: out std_logic_vector(1 downto 0); --what to write back
+	wb_sel: out std_logic_vector(1 downto 0) --what to write back
 ); 
 end ID;
 
@@ -59,6 +60,7 @@ begin
     -- destination register of WB-stage instruction
     wb_rd  <= inst_MEM_WB_REGLN(11 downto 7);
 
+    -- TODO clock the register write process
     process(inst_MEM_WB_REGLN, data_WB_ID_LN, wb_rd)
         variable wb_opcode : std_logic_vector(6 downto 0);
         variable wb_rd_int : integer;
@@ -225,8 +227,8 @@ begin
         when "1100111" =>
             jump <= '1';
             reg_write <= '1';
-            alu_src <= '1'; compute target = rs1 + imm
-            wb_sel <= "10"; write pc + 4
+            alu_src <= '1'; -- compute target = rs1 + imm
+            wb_sel <= "10"; -- write pc + 4
         -- LUI
         when "0110111" =>
             reg_write <= '1';
