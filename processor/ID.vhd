@@ -1,9 +1,11 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+-- compiled ok
 
 entity ID is
 port(
+    clk: in std_logic;
 	addr_IF_ID_REGLN 	: in std_logic_vector(31 downto 0);
 	inst_IF_ID_REGLN 	: in std_logic_vector(31 downto 0);
 	addr_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
@@ -12,8 +14,8 @@ port(
 	imm_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
 	inst_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
 	inst_MEM_ID_REGLN	: out std_logic_vector(31 downto 0);
-	data_WB_ID_LN		: out std_logic_vector(31 downto 0);
-    inst_MEM_WB_REGLN   : in std_logic_vector(11 downto 7);
+	data_WB_ID_LN		: in std_logic_vector(31 downto 0);
+    inst_MEM_WB_REGLN : in std_logic_vector(31 downto 0);
     -- for control process
 	alu_src: out std_logic; -- tell rest of CPU to use imm or reg
 	alu_op : out std_logic_vector(3 downto 0); -- what ALU does
@@ -60,35 +62,37 @@ begin
     -- destination register of WB-stage instruction
     wb_rd  <= inst_MEM_WB_REGLN(11 downto 7);
 
-    -- TODO clock the register write process
-    process(inst_MEM_WB_REGLN, data_WB_ID_LN, wb_rd)
-        variable wb_opcode : std_logic_vector(6 downto 0);
-        variable wb_rd_int : integer;
+    -- clock the register write process
+    process(clk)
+        variable wb_opcode: std_logic_vector(6 downto 0);
+        variable wb_rd_int: integer;
     begin
-        wb_opcode := inst_MEM_WB_REGLN(6 downto 0);
-        wb_rd_int := to_integer(unsigned(wb_rd));
+        if rising_edge(clk) then
+            wb_opcode := inst_MEM_WB_REGLN(6 downto 0);
+            wb_rd_int := to_integer(unsigned(wb_rd));
         -- x0 always stay zero
-        regs(0) <= (others => '0');
+            regs(0) <= (others => '0');
         -- write back for instructions that write rd (so no store/branch)
-        if wb_rd_int /= 0 then
-            case wb_opcode is
-                when "0110011" => -- R-type
-                    regs(wb_rd_int) <= data_WB_ID_LN;
-                when "0010011" => -- I-type ALU
-                    regs(wb_rd_int) <= data_WB_ID_LN;
-                when "0000011" => -- I-type LOAD lw
-                    regs(wb_rd_int) <= data_WB_ID_LN;
-                when "1101111" =>  -- JAL
-                    regs(wb_rd_int) <= data_WB_ID_LN;
-                when "1100111" => -- JALR
-                    regs(wb_rd_int) <= data_WB_ID_LN;
-                when "0110111" => -- LUI
-                    regs(wb_rd_int) <= data_WB_ID_LN;
-                when "0010111" => -- AUIPC
-                    regs(wb_rd_int) <= data_WB_ID_LN;
-                when others =>
-                    null;
-            end case;
+            if wb_rd_int /= 0 then
+                case wb_opcode is
+                    when "0110011" => -- R-type
+                        regs(wb_rd_int) <= data_WB_ID_LN;
+                    when "0010011" => -- I-type ALU
+                        regs(wb_rd_int) <= data_WB_ID_LN;
+                    when "0000011" => -- I-type LOAD lw
+                        regs(wb_rd_int) <= data_WB_ID_LN;
+                    when "1101111" =>  -- JAL
+                        regs(wb_rd_int) <= data_WB_ID_LN;
+                    when "1100111" => -- JALR
+                        regs(wb_rd_int) <= data_WB_ID_LN;
+                    when "0110111" => -- LUI
+                        regs(wb_rd_int) <= data_WB_ID_LN;
+                    when "0010111" => -- AUIPC
+                        regs(wb_rd_int) <= data_WB_ID_LN;
+                    when others =>
+                        null;
+                end case;
+            end if;
         end if;
     end process;
     -- Read register operands
@@ -96,61 +100,74 @@ begin
     op2_val <= regs(to_integer(unsigned(rs2)));
     -- Immediate generator (not from registers)
     process(inst_IF_ID_REGLN, opcode)
-        variable imm_i: signed(31 downto 0);
-        variable imm_s: signed(31 downto 0);
-        variable imm_b: signed(31 downto 0);
-        variable imm_j: signed(31 downto 0);
-        variable imm_u: std_logic_vector(31 downto 0);
+        variable imm_i : signed(31 downto 0);
+        variable imm_s : signed(31 downto 0);
+        variable imm_b : signed(31 downto 0);
+        variable imm_j : signed(31 downto 0);
+        variable imm_u : std_logic_vector(31 downto 0);
     begin
         imm_val <= (others => '0');
-        -- defaults
-        imm_i:= (others => '0');
-        imm_s:= (others => '0');
-        imm_b:= (others => '0');
-        imm_j:= (others => '0');
-        imm_u:= (others => '0');
+
+        imm_i := (others => '0');
+        imm_s := (others => '0');
+        imm_b := (others => '0');
+        imm_j := (others => '0');
+        imm_u := (others => '0');
+
         case opcode is
-			-- R-type: no immediate
+            -- R-type: no immediate
             when "0110011" =>
                 imm_val <= (others => '0');
-            -- I-type immediate (addi, xori, ori, andi, jalr, loads)
+
+            -- I-type immediate
             when "0010011" | "0000011" | "1100111" =>
                 imm_i := resize(signed(inst_IF_ID_REGLN(31 downto 20)), 32);
                 imm_val <= std_logic_vector(imm_i);
-            -- S-type immediate (sb, sh, sw)
+
+            -- S-type immediate
             when "0100011" =>
                 imm_s := resize(
-                    signed(inst_IF_ID_REGLN(31 downto 25) &
-                           inst_IF_ID_REGLN(11 downto 7)),
+                    signed(std_logic_vector'(
+                        inst_IF_ID_REGLN(31 downto 25) &
+                        inst_IF_ID_REGLN(11 downto 7)
+                    )),
                     32
                 );
                 imm_val <= std_logic_vector(imm_s);
-            -- B-type immediate (beq, bne, blt, bge, bltu, bgeu)
+
+            -- B-type immediate
             when "1100011" =>
                 imm_b := resize(
-                    signed(inst_IF_ID_REGLN(31) &
-                           inst_IF_ID_REGLN(7) &
-                           inst_IF_ID_REGLN(30 downto 25) &
-                           inst_IF_ID_REGLN(11 downto 8) &
-                           '0'),
+                    signed(std_logic_vector'(
+                        inst_IF_ID_REGLN(31) &
+                        inst_IF_ID_REGLN(7) &
+                        inst_IF_ID_REGLN(30 downto 25) &
+                        inst_IF_ID_REGLN(11 downto 8) &
+                        '0'
+                    )),
                     32
                 );
                 imm_val <= std_logic_vector(imm_b);
-			-- U-type immediate (lui, auipc)
+
+            -- U-type immediate
             when "0110111" | "0010111" =>
                 imm_u := inst_IF_ID_REGLN(31 downto 12) & "000000000000";
                 imm_val <= imm_u;
-            -- J-type immediate (jal)
+
+            -- J-type immediate
             when "1101111" =>
                 imm_j := resize(
-                    signed(inst_IF_ID_REGLN(31) &
-                           inst_IF_ID_REGLN(19 downto 12) &
-                           inst_IF_ID_REGLN(20) &
-                           inst_IF_ID_REGLN(30 downto 21) &
-                           '0'),
+                    signed(std_logic_vector'(
+                        inst_IF_ID_REGLN(31) &
+                        inst_IF_ID_REGLN(19 downto 12) &
+                        inst_IF_ID_REGLN(20) &
+                        inst_IF_ID_REGLN(30 downto 21) &
+                        '0'
+                    )),
                     32
                 );
-                imm_val <= std_logic_vector(imm_j);    
+                imm_val <= std_logic_vector(imm_j);
+
             when others =>
                 imm_val <= (others => '0');
         end case;
