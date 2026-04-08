@@ -19,15 +19,15 @@ port(
 
     -- memory control signals
 	mem_read_EX_MEM_REGLN   : in  std_logic;
-	mem_read_MEM_WB_LNREG   : out std_logic;
+	-- mem_read_MEM_WB_LNREG   : out std_logic;
 	mem_write_EX_MEM_REGLN  : in  std_logic;
-	mem_write_MEM_WB_LNREG  : out std_logic;
+	-- mem_write_MEM_WB_LNREG  : out std_logic;
 
     -- write back control signals
 	reg_write_EX_MEM_REGLN  : in  std_logic; -- write to reg
 	reg_write_MEM_WB_LNREG  : out std_logic; -- write to reg
 	wb_sel_EX_MEM_REGLN     : in std_logic_vector(1 downto 0); --what to write back
-	wb_selMEM_WB_LNREG      : out std_logic_vector(1 downto 0); --what to write back
+	wb_sel_MEM_WB_LNREG      : out std_logic_vector(1 downto 0); --what to write back
 
     -- control flow signals
 	branch_EX_MEM_REGLN     : in std_logic; -- control flow
@@ -40,6 +40,7 @@ end MEM;
 
 architecture Behavioral of MEM is
     -- signals
+    signal s_address : integer range 0 to 32767;
 
     -- components
     component memory IS
@@ -58,12 +59,13 @@ architecture Behavioral of MEM is
             -- ;
             -- waitrequest: OUT STD_LOGIC
         );
+    
     END component;
 
 begin
     data_mem : memory port map(
         clock => clk,
-        address => to_integer(unsigned(result_EX_MEM_REGLN)),
+        address => s_address,
         memread => mem_read_EX_MEM_REGLN,
         memwrite => mem_write_EX_MEM_REGLN,
         readdata => data_MEM_WB_LNREG,
@@ -72,5 +74,20 @@ begin
         -- waitrequest => s_waitrequest
     );
 
+    s_address <= to_integer(unsigned(result_EX_MEM_REGLN));
+
+
+    -- alu result pass through
+    result_MEM_WB_LNREG <= result_EX_MEM_REGLN;
+    result_EX_IF_LN <= result_EX_MEM_REGLN;
+
+    -- instruction pass through
+    inst_MEM_WB_LNREG <= inst_EX_MEM_REGLN;
+
+    -- control signals pass through
+    reg_write_MEM_WB_LNREG <= reg_write_EX_MEM_REGLN;
+    wb_sel_MEM_WB_LNREG <= wb_sel_MEM_WB_LNREG;
+    branch_MEM_WB_LNREG <= branch_EX_MEM_REGLN;
+    jump_MEM_WB_LNREG <= jump_EX_MEM_REGLN;
 
 end Behavioral;
