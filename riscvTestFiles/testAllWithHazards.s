@@ -37,10 +37,10 @@ reset:	# This function resets all caller saved regs for testing
 	ori x16, x0, 0
 	andi x17, x0, 0
 
-	slti, x28, x0, 0
-	addi, x29, x0, 0
-	xori, x30, x0, 0
-	slti, x31, x0, 0
+	slti x28, x0, 0
+	addi x29, x0, 0
+	xori x30, x0, 0
+	slti x31, x0, 0
 
 	jalr x0, ra, 0	# Branch back to the caller
 	

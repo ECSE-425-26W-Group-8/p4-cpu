@@ -1,7 +1,9 @@
 inst to test
 
 caller saved reg (volatile) can be overwritten without saved first
+5-7, 10-11, 12-17, 28-31
 callee saved ref must be saved by function before being overwritten
+1, 2, 8, 9, 18-27
 
 instructions to test:
 
