@@ -1,0 +1,1 @@
+main:	# This is a test to ensure that the execute stage works as intended
