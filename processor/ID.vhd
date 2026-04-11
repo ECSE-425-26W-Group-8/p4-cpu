@@ -34,11 +34,11 @@ end ID;
 
 architecture Behavioral of ID is
 	-- register file: 32 reg of 32 bits
-	type reg_file_type is array(0 to 31) of std_logic_vector(31 downto 0);
+    type reg_file_type is array(0 to 31) of std_logic_vector(31 downto 0);
     signal regs : reg_file_type := (others => (others => '0'));
 
 	-- instr fields
-	signal opcode: std_logic_vector(6 downto 0);
+    signal opcode: std_logic_vector(6 downto 0);
     signal rd: std_logic_vector(4 downto 0);
     signal funct3: std_logic_vector(2 downto 0);
     signal rs1: std_logic_vector(4 downto 0);
@@ -52,7 +52,7 @@ architecture Behavioral of ID is
     signal imm_val: std_logic_vector(31 downto 0);
 begin
 	-- extract fields from current instruction
-	opcode <= inst_IF_ID_REGLN(6 downto 0);
+    opcode <= inst_IF_ID_REGLN(6 downto 0);
     rd <= inst_IF_ID_REGLN(11 downto 7);
     funct3 <= inst_IF_ID_REGLN(14 downto 12);
     rs1 <= inst_IF_ID_REGLN(19 downto 15);
