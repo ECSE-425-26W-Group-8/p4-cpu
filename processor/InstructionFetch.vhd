@@ -64,7 +64,7 @@ begin
     
     pc_update: process(clk)
     begin
-        if rising_edge(clk) then
+        if rising_edge(clk) and not stall = '1' then
             pc <= next_pc;
         end if;
     end process pc_update;
