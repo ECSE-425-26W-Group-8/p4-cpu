@@ -10,7 +10,6 @@ port(
 	data_MEM_WB_LNREG       : out std_logic_vector(31 downto 0);
     result_MEM_WB_LNREG     : out std_logic_vector(31 downto 0);
 	inst_MEM_WB_LNREG       : out std_logic_vector(31 downto 0);
-	result_EX_IF_LN         : out std_logic_vector(31 downto 0);
     clk                     : in STD_LOGIC;
 
     -- for control process
@@ -35,7 +34,7 @@ port(
 	jump_EX_MEM_REGLN       : in std_logic; -- control flow
 	jump_MEM_WB_LNREG       : out std_logic -- control flow
 
-); 
+);
 end MEM;
 
 architecture Behavioral of MEM is
@@ -59,7 +58,7 @@ architecture Behavioral of MEM is
             -- ;
             -- waitrequest: OUT STD_LOGIC
         );
-    
+
     END component;
 
 begin
@@ -79,7 +78,6 @@ begin
 
     -- alu result pass through
     result_MEM_WB_LNREG <= result_EX_MEM_REGLN;
-    result_EX_IF_LN <= result_EX_MEM_REGLN;
 
     -- instruction pass through
     inst_MEM_WB_LNREG <= inst_EX_MEM_REGLN;
