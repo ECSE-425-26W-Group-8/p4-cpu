@@ -33,54 +33,41 @@ architecture Behavioral of EX is
 -- Declare some signals here to get shit set up
 
 begin
-	process(alu_op, alu_src, op1_ID_EX_REGLN, addr_ID_EX_REGLN)
-		variable op1 : signed(31 downto 0);
-		variable op2 : signed(31 downto 0);
+	process(alu_op, alu_src, op1_ID_EX_REGLN, addr_ID_EX_REGLN, imm_ID_EX_REGLN, op2_ID_EX_REGLN)
+		variable op1 : signed(31 downto 0);	-- holds op1 value
+		variable op2 : signed(31 downto 0);	-- holds op2 val or imm val from ID
+		variable shift : integer range 0 to 63;
 	begin
 		op1 := signed(op1_ID_EX_REGLN);
 		
-		if alu_src = '1' then
+		if alu_src = '1' then	-- 
 			op2 := signed(imm_ID_EX_REGLN);
 		else 
 			op2 := signed(op2_ID_EX_REGLN);
 		end if;
+		
+		shift := to_integer(unsigned(std_logic_vector(op2(5 downto 0))));
 
 		case alu_op is
 			when "0000" =>		-- Add
 				result_EX_MEM_LNREG <= std_logic_vector(op1 + op2);
-
 			when "0001" =>		-- Sub
-				-- could be for branch cmp
-				-- also some other cases? look closer
 				result_EX_MEM_LNREG <= std_logic_vector(op1 - op2);
-
 			when "0010" =>		-- multiply
-				-- only occurs when we have reg so no check
-				result_EX_MEM_LNREG <= std_logic_vector(op1 * op2);
-
+				result_EX_MEM_LNREG <= std_logic_vector(resize(op1 * op2), 32);
 			when "0011" =>		-- and
 				result_EX_MEM_LNREG <= std_logic_vector(op1 AND op2);
-			
 			when "0100" =>		-- or
 				result_EX_MEM_LNREG <= std_logic_vector(op1 OR op2);
-				
 			when "0101" =>		-- xor
 				result_EX_MEM_LNREG <= std_logic_vector(op1 XOR op2);
-			
 			when "0110" =>		-- srl
-				-- use register value
-				result_EX_MEM_LNREG <= shift_right(unsigned(op1_ID_EX_REGLN), op2_ID_EX_REGLN);
-				
+				result_EX_MEM_LNREG <= shift_right(unsigned(op1_ID_EX_REGLN), shift);
 			when "0111" =>		-- sra
-				-- use register value
-				result_EX_MEM_LNREG <= shift_right(signed(op1_ID_EX_REGLN), op2_ID_EX_REGLN);
-			
+				result_EX_MEM_LNREG <= shift_right(signed(op1_ID_EX_REGLN), shift);
 			when "1000" =>		-- sll
-				-- use register value
-				result_EX_MEM_LNREG <= shift_left(op1_ID_EX_REGLN, op2Addr_EX_MEM_LNREG);
-				
+				result_EX_MEM_LNREG <= shift_left(op1_ID_EX_REGLN, shift);
 			when "1001" =>		-- slti
-				-- Use the immediate value
 				if op1 < op2 then
 					result_EX_MEM_LNREG <= x"00000001";
 				else
