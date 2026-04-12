@@ -49,7 +49,7 @@ add wave -label "npc (PC+4)"             -noupdate -radix hex        /$TB_ENTITY
 add wave -label "pc"                     -noupdate -radix hex        /$TB_ENTITY/pc_MEM_WB_REGLN
 
 add wave -divider "Control inputs"
-add wave -label "reg_write_in"           -noupdate                   /$TB_ENTITY/reg_write_MEM_WEB_REGLN
+add wave -label "reg_write_in"           -noupdate                   /$TB_ENTITY/reg_write_MEM_WB_REGLN
 add wave -label "branch_in"              -noupdate                   /$TB_ENTITY/branch_MEM_WB_REGLN
 add wave -label "jump_in"                -noupdate                   /$TB_ENTITY/jump_MEM_WB_REGLN
 

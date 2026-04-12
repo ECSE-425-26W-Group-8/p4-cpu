@@ -12,7 +12,7 @@
 --   wb_sel = "01" → data_WB_ID_LN = data_MEM_WB_REGLN    (memory read data)
 --   wb_sel = "10" → data_WB_ID_LN = npc_MEM_WB_REGLN     (PC+4, return addr)
 --
---   reg_write_WB_ID_LN is a direct pass-through of reg_write_MEM_WEB_REGLN.
+--   reg_write_WB_ID_LN is a direct pass-through of reg_write_MEM_WB_REGLN.
 --
 -- Because the DUT has no sequential logic, assertions are checked after a short
 -- propagation delay (10 ns) rather than on a clock edge.  A free-running clock
@@ -30,10 +30,10 @@
 --       Verifies data_WB_ID_LN equals npc_MEM_WB_REGLN.
 --
 --   Test 4 - reg_write pass-through, asserted:
---       Drives reg_write_MEM_WEB_REGLN = '1', verifies reg_write_WB_ID_LN = '1'.
+--       Drives reg_write_MEM_WB_REGLN = '1', verifies reg_write_WB_ID_LN = '1'.
 --
 --   Test 5 - reg_write pass-through, deasserted:
---       Drives reg_write_MEM_WEB_REGLN = '0', verifies reg_write_WB_ID_LN = '0'.
+--       Drives reg_write_MEM_WB_REGLN = '0', verifies reg_write_WB_ID_LN = '0'.
 --
 --   Test 6 - Input isolation (only selected bus propagates):
 --       Sweeps wb_sel through "00", "01", "10" with all three data inputs
@@ -61,7 +61,7 @@ architecture sim of WB_tb is
             pc_MEM_WB_REGLN          : in  std_logic_vector(31 downto 0);
             npc_MEM_WB_REGLN         : in  std_logic_vector(31 downto 0);
             data_WB_ID_LN            : out std_logic_vector(31 downto 0);
-            reg_write_MEM_WEB_REGLN  : in  std_logic;
+            reg_write_MEM_WB_REGLN  : in  std_logic;
             reg_write_WB_ID_LN       : out std_logic;
             wb_sel_MEM_WB_REGLN      : in  std_logic_vector(1 downto 0);
             branch_MEM_WB_REGLN      : in  std_logic;
@@ -83,7 +83,7 @@ architecture sim of WB_tb is
     signal pc_MEM_WB_REGLN          : std_logic_vector(31 downto 0) := (others => '0');
     signal npc_MEM_WB_REGLN         : std_logic_vector(31 downto 0) := (others => '0');
     signal data_WB_ID_LN            : std_logic_vector(31 downto 0);
-    signal reg_write_MEM_WEB_REGLN  : std_logic := '0';
+    signal reg_write_MEM_WB_REGLN  : std_logic := '0';
     signal reg_write_WB_ID_LN       : std_logic;
     signal wb_sel_MEM_WB_REGLN      : std_logic_vector(1 downto 0) := "00";
     signal branch_MEM_WB_REGLN      : std_logic := '0';
@@ -119,7 +119,7 @@ begin
             pc_MEM_WB_REGLN          => pc_MEM_WB_REGLN,
             npc_MEM_WB_REGLN         => npc_MEM_WB_REGLN,
             data_WB_ID_LN            => data_WB_ID_LN,
-            reg_write_MEM_WEB_REGLN  => reg_write_MEM_WEB_REGLN,
+            reg_write_MEM_WB_REGLN  => reg_write_MEM_WB_REGLN,
             reg_write_WB_ID_LN       => reg_write_WB_ID_LN,
             wb_sel_MEM_WB_REGLN      => wb_sel_MEM_WB_REGLN,
             branch_MEM_WB_REGLN      => branch_MEM_WB_REGLN,
@@ -142,7 +142,7 @@ begin
         data_MEM_WB_REGLN       <= x"DEADBEEF";   -- memory data  (should not appear)
         npc_MEM_WB_REGLN        <= x"00000008";   -- PC+4         (should not appear)
         wb_sel_MEM_WB_REGLN     <= "00";
-        reg_write_MEM_WEB_REGLN <= '1';
+        reg_write_MEM_WB_REGLN <= '1';
         wait for PROP;
 
         assert data_WB_ID_LN = x"ABCD1234"
@@ -188,7 +188,7 @@ begin
         report "=== TEST 4: reg_write pass-through (asserted) ===" severity note;
 
         wb_sel_MEM_WB_REGLN     <= "00";
-        reg_write_MEM_WEB_REGLN <= '1';
+        reg_write_MEM_WB_REGLN <= '1';
         wait for PROP;
 
         assert reg_write_WB_ID_LN = '1'
@@ -203,7 +203,7 @@ begin
         -- =====================================================================
         report "=== TEST 5: reg_write pass-through (deasserted) ===" severity note;
 
-        reg_write_MEM_WEB_REGLN <= '0';
+        reg_write_MEM_WB_REGLN <= '0';
         wait for PROP;
 
         assert reg_write_WB_ID_LN = '0'

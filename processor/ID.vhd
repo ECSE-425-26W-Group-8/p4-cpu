@@ -6,14 +6,17 @@ use ieee.numeric_std.all;
 entity ID is
 port(
     clk: in std_logic;
-	addr_IF_ID_REGLN 	: in std_logic_vector(31 downto 0);
+	pc_IF_ID_REGLN 	: in std_logic_vector(31 downto 0);
+	npc_IF_ID_REGLN 	: in std_logic_vector(31 downto 0);
 	inst_IF_ID_REGLN 	: in std_logic_vector(31 downto 0);
-	addr_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
+	pc_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
+	npc_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
 	op1_ID_EX_LNREG		: out std_logic_vector(31 downto 0);
 	op2_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
 	imm_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
 	inst_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
-	inst_MEM_ID_REGLN	: out std_logic_vector(31 downto 0);
+	-- inst_MEM_ID_REGLN	: out std_logic_vector(31 downto 0);
+    reg_write_WB_ID_LN  : in STD_LOGIC;
 	data_WB_ID_LN		: in std_logic_vector(31 downto 0);
     inst_MEM_WB_REGLN : in std_logic_vector(31 downto 0);
     -- for control process
@@ -25,6 +28,7 @@ port(
 	branch: out std_logic; -- control flow
 	jump: out std_logic; -- control flow
 	wb_sel: out std_logic_vector(1 downto 0) --what to write back
+
 ); 
 end ID;
 
@@ -70,31 +74,15 @@ begin
         if rising_edge(clk) then
             wb_opcode := inst_MEM_WB_REGLN(6 downto 0);
             wb_rd_int := to_integer(unsigned(wb_rd));
-        -- x0 always stay zero
-            regs(0) <= (others => '0');
         -- write back for instructions that write rd (so no store/branch)
-            if wb_rd_int /= 0 then
-                case wb_opcode is
-                    when "0110011" => -- R-type
-                        regs(wb_rd_int) <= data_WB_ID_LN;
-                    when "0010011" => -- I-type ALU
-                        regs(wb_rd_int) <= data_WB_ID_LN;
-                    when "0000011" => -- I-type LOAD lw
-                        regs(wb_rd_int) <= data_WB_ID_LN;
-                    when "1101111" =>  -- JAL
-                        regs(wb_rd_int) <= data_WB_ID_LN;
-                    when "1100111" => -- JALR
-                        regs(wb_rd_int) <= data_WB_ID_LN;
-                    when "0110111" => -- LUI
-                        regs(wb_rd_int) <= data_WB_ID_LN;
-                    when "0010111" => -- AUIPC
-                        regs(wb_rd_int) <= data_WB_ID_LN;
-                    when others =>
-                        null;
-                end case;
+            if wb_rd_int /= 0 and reg_write_WB_ID_LN = '1' then
+                regs(wb_rd_int) <= data_WB_ID_LN;
             end if;
         end if;
     end process;
+    -- x0 always stay zero
+    regs(0) <= (others => '0');
+
     -- Read register operands
     op1_val <= regs(to_integer(unsigned(rs1)));
     op2_val <= regs(to_integer(unsigned(rs2)));
@@ -265,7 +253,8 @@ begin
 end process;
 
     -- Outputs to EX stage
-    addr_ID_EX_LNREG <= addr_IF_ID_REGLN;
+    pc_ID_EX_LNREG <= pc_IF_ID_REGLN;
+    npc_ID_EX_LNREG <= npc_IF_ID_REGLN;
     op1_ID_EX_LNREG <= op1_val;
     op2_ID_EX_LNREG <= op2_val;
     imm_ID_EX_LNREG <= imm_val;

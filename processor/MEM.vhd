@@ -86,7 +86,7 @@ begin
 
     -- control signals pass through
     reg_write_MEM_WB_LNREG <= reg_write_EX_MEM_REGLN;
-    wb_sel_MEM_WB_LNREG <= wb_sel_MEM_WB_LNREG;
+    wb_sel_MEM_WB_LNREG <= wb_sel_EX_MEM_REGLN;
     branch_MEM_WB_LNREG <= branch_EX_MEM_REGLN;
     jump_MEM_WB_LNREG <= jump_EX_MEM_REGLN;
 
