@@ -230,6 +230,7 @@ begin
             jump <= '1';
             reg_write <= '1';
             wb_sel <= "10"; -- write PC+4
+			alu_op <= "0000";
         -- JALR jump and link reg to rs1 + imm
         when "1100111" =>
             jump <= '1';
@@ -237,11 +238,15 @@ begin
             alu_src <= '1'; -- compute target = rs1 + imm
             wb_sel <= "10"; -- write pc + 4
         -- LUI
-        when "0110111" =>
+        when "0110111" =>	-- lui
             reg_write <= '1';
             alu_src <= '1';
             wb_sel <= "00";
 			alu_op <= "1010";
+		when "0010111" =>	-- auipc
+			alu_op <= "1011";
+		when "1100111" =>	-- jalr
+			alu_op <= "1100";
         when others =>
             null;
     end case;
