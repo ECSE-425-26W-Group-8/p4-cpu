@@ -141,4 +141,7 @@ begin
 		
 	end process;
 	
+	op2Addr_EX_MEM_LNREG 	<= op1_ID_EX_REGLN;
+	inst_EX_MEM_LNREG 		<= inst_ID_EX_REGLN;
+	
 end Behavioral;
