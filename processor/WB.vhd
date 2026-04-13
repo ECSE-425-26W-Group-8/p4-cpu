@@ -13,10 +13,10 @@ port(
     reg_write_MEM_WB_REGLN  : in  std_logic;
     reg_write_WB_ID_LN      : out std_logic;
     wb_sel_MEM_WB_REGLN     : in  std_logic_vector(1 downto 0);
-    
+
     branch_MEM_WB_REGLN : in std_logic;
     jump_MEM_WB_REGLN : in std_logic
-); 
+);
 end WB;
 
 architecture Behavioral of WB is

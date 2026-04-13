@@ -21,7 +21,7 @@ architecture Behavioral of InstructionFetch is
     signal next_pc : std_logic_vector(31 downto 0);
     signal int_pc : INTEGER := 0;
     -- signal s_waitrequest : STD_LOGIC;
-    signal s_writedata : std_logic_vector(7 downto 0);
+    signal s_writedata : std_logic_vector(31 downto 0);
     signal s_memread : STD_LOGIC;
 
     -- clocked
@@ -74,7 +74,7 @@ begin
     next_pc <= result_EX_IF_REGLN when branchTake_EX_IF_LN = '1' else
                std_logic_vector(unsigned(pc) + 4) ;
 
-    s_memread <= '1' when stall = '0' else '1';
+    s_memread <= '0' when stall = '1' else '1';
 
     inst_IF_ID_LNREG <= s_instruction;
     pc_IF_ID_LNREG <= pc;
