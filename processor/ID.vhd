@@ -76,8 +76,6 @@ begin
             end if;
         end if;
     end process;
-    -- x0 always stay zero
-    regs(0) <= (others => '0');
 
     -- Read register operands
     op1_val <= regs(to_integer(unsigned(rs1)));
