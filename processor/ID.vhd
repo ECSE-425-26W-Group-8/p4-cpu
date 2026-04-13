@@ -243,6 +243,7 @@ begin
             reg_write <= '1';
             alu_src <= '1';
             wb_sel <= "00";
+			alu_op <= "1010";
         when others =>
             null;
     end case;
