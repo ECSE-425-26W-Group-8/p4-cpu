@@ -61,7 +61,6 @@ architecture sim of ID_tb is
     signal wb_sel : std_logic_vector(1 downto 0);
 
 begin
-
     clk_process : process
     begin
         clk <= '0';
@@ -72,27 +71,27 @@ begin
 
     dut : ID
     port map(
-        clk             => clk,
-        pc_IF_ID_REGLN  => pc_IF_ID_REGLN,
+        clk => clk,
+        pc_IF_ID_REGLN => pc_IF_ID_REGLN,
         npc_IF_ID_REGLN => npc_IF_ID_REGLN,
         inst_IF_ID_REGLN=> inst_IF_ID_REGLN,
-        pc_ID_EX_LNREG  => pc_ID_EX_LNREG,
+        pc_ID_EX_LNREG => pc_ID_EX_LNREG,
         npc_ID_EX_LNREG => npc_ID_EX_LNREG,
         op1_ID_EX_LNREG => op1_ID_EX_LNREG,
         op2_ID_EX_LNREG => op2_ID_EX_LNREG,
         imm_ID_EX_LNREG => imm_ID_EX_LNREG,
         inst_ID_EX_LNREG => inst_ID_EX_LNREG,
         reg_write_WB_ID_LN => reg_write_WB_ID_LN,
-        data_WB_ID_LN   => data_WB_ID_LN,
-        inst_MEM_WB_REGLN  => inst_MEM_WB_REGLN,
-        alu_src            => alu_src,
-        alu_op             => alu_op,
-        mem_read           => mem_read,
-        mem_write          => mem_write,
-        reg_write          => reg_write,
-        branch             => branch,
-        jump               => jump,
-        wb_sel             => wb_sel
+        data_WB_ID_LN => data_WB_ID_LN,
+        inst_MEM_WB_REGLN => inst_MEM_WB_REGLN,
+        alu_src => alu_src,
+        alu_op => alu_op,
+        mem_read => mem_read,
+        mem_write => mem_write,
+        reg_write => reg_write,
+        branch => branch,
+        jump => jump,
+        wb_sel => wb_sel
     );
 
     stim_process : process
@@ -101,11 +100,11 @@ begin
         pc_IF_ID_REGLN  <= x"00000020";
         npc_IF_ID_REGLN <= x"00000024";
         wait for 1 ns;
+
         -- TEST 1: ADDI decode
         report "=== TEST 1: ADDI decode ===" severity note;
         inst_IF_ID_REGLN <= x"00500093"; -- addi x1, x0, 5
         wait for 1 ns;
-
         assert pc_ID_EX_LNREG = x"00000020"
             report "FAIL T1 pc passthrough" severity error;
         assert npc_ID_EX_LNREG = x"00000024"
@@ -124,11 +123,11 @@ begin
             report "FAIL T1 control defaults" severity error;
         assert wb_sel = "00"
             report "FAIL T1 wb_sel" severity error;
+
         -- TEST 2: R-type ADD decode
         report "=== TEST 2: R-type ADD decode ===" severity note;
         inst_IF_ID_REGLN <= x"002081B3"; -- add x3, x1, x2
         wait for 1 ns;
-
         assert imm_ID_EX_LNREG = x"00000000"
             report "FAIL T2 imm" severity error;
         assert reg_write = '1'
@@ -141,31 +140,32 @@ begin
             report "FAIL T2 control defaults" severity error;
         assert wb_sel = "00"
             report "FAIL T2 wb_sel" severity error;
+
         -- TEST 3: R-type SUB decode
         report "=== TEST 3: R-type SUB decode ===" severity note;
         inst_IF_ID_REGLN <= x"402081B3"; -- sub x3, x1, x2
         wait for 1 ns;
-
         assert alu_op = "0001"
             report "FAIL T3 alu_op expected SUB" severity error;
         assert reg_write = '1' and alu_src = '0'
             report "FAIL T3 controls" severity error;
+
         -- TEST 4: R-type MUL decode
         report "=== TEST 4: R-type MUL decode ===" severity note;
         inst_IF_ID_REGLN <= x"022081B3"; -- mul x3, x1, x2
         wait for 1 ns;
-
         assert alu_op = "0010"
             report "FAIL T4 alu_op expected MUL" severity error;
         assert reg_write = '1' and alu_src = '0'
             report "FAIL T4 controls" severity error;
+
         -- TEST 5: R-type AND decode
         report "=== TEST 5: R-type AND decode ===" severity note;
         inst_IF_ID_REGLN <= x"0020F1B3"; -- and x3, x1, x2
         wait for 1 ns;
-
         assert alu_op = "0011"
             report "FAIL T5 alu_op expected AND" severity error;
+
         -- TEST 6: R-type OR decode
         report "=== TEST 6: R-type OR decode ===" severity note;
         inst_IF_ID_REGLN <= x"0020E1B3"; -- or x3, x1, x2
@@ -177,7 +177,6 @@ begin
         report "=== TEST 7: R-type SLL decode ===" severity note;
         inst_IF_ID_REGLN <= x"002091B3"; -- sll x3, x1, x2
         wait for 1 ns;
-
         assert alu_op = "0101"
             report "FAIL T7 alu_op expected SLL" severity error;
 
@@ -185,9 +184,9 @@ begin
         report "=== TEST 8: R-type SRL decode ===" severity note;
         inst_IF_ID_REGLN <= x"0020D1B3"; -- srl x3, x1, x2
         wait for 1 ns;
-
         assert alu_op = "0110"
             report "FAIL T8 alu_op expected SRL" severity error;
+
         -- TEST 9: R-type SRA decode
         report "=== TEST 9: R-type SRA decode ===" severity note;
         inst_IF_ID_REGLN <= x"4020D1B3"; -- sra x3, x1, x2
@@ -199,7 +198,6 @@ begin
         report "=== TEST 10: ORI decode ===" severity note;
         inst_IF_ID_REGLN <= x"00F0E193"; -- ori x3, x1, 15
         wait for 1 ns;
-
         assert imm_ID_EX_LNREG = x"0000000F"
             report "FAIL T10 imm" severity error;
         assert reg_write = '1' and alu_src = '1'
@@ -211,7 +209,6 @@ begin
         report "=== TEST 11: XORI decode ===" severity note;
         inst_IF_ID_REGLN <= x"0FF0C193"; -- xori x3, x1, 255
         wait for 1 ns;
-
         assert imm_ID_EX_LNREG = x"000000FF"
             report "FAIL T11 imm" severity error;
         assert alu_op = "0101"
@@ -221,7 +218,6 @@ begin
         report "=== TEST 12: LOAD negative offset ===" severity note;
         inst_IF_ID_REGLN <= x"FF00A383"; -- lw x7, -16(x1)
         wait for 1 ns;
-
         assert imm_ID_EX_LNREG = x"FFFFFFF0"
             report "FAIL T12 imm should be -16" severity error;
         assert mem_read = '1'
@@ -258,7 +254,6 @@ begin
         report "=== TEST 14: STORE negative offset ===" severity note;
         inst_IF_ID_REGLN <= x"FE20AC23"; -- sw x2, -8(x1)
         wait for 1 ns;
-
         assert imm_ID_EX_LNREG = x"FFFFFFF8"
             report "FAIL T14 imm should be -8" severity error;
         assert mem_write = '1'
@@ -268,7 +263,6 @@ begin
         report "=== TEST 15: BRANCH positive offset ===" severity note;
         inst_IF_ID_REGLN <= x"00208463"; -- beq x1, x2, 8
         wait for 1 ns;
-
         assert imm_ID_EX_LNREG = x"00000008"
             report "FAIL T15 imm should be 8" severity error;
         assert branch = '1'
@@ -284,7 +278,6 @@ begin
         report "=== TEST 16: BRANCH negative offset ===" severity note;
         inst_IF_ID_REGLN <= x"FE208EE3"; -- beq x1, x2, -4
         wait for 1 ns;
-
         assert imm_ID_EX_LNREG = x"FFFFFFFC"
             report "FAIL T16 imm should be -4" severity error;
         assert branch = '1'
@@ -302,11 +295,11 @@ begin
             report "FAIL T17 alu_src" severity error;
         assert wb_sel = "00"
             report "FAIL T17 wb_sel" severity error;
+
         -- TEST 18: JAL positive offset
         report "=== TEST 18: JAL positive offset ===" severity note;
         inst_IF_ID_REGLN <= x"010000EF"; -- jal x1, 16
         wait for 1 ns;
-
         assert imm_ID_EX_LNREG = x"00000010"
             report "FAIL T18 imm should be 16" severity error;
         assert jump = '1'
@@ -320,7 +313,6 @@ begin
         report "=== TEST 19: JAL negative offset ===" severity note;
         inst_IF_ID_REGLN <= x"FFDFF0EF"; -- jal x1, -4
         wait for 1 ns;
-
         assert imm_ID_EX_LNREG = x"FFFFFFFC"
             report "FAIL T19 imm should be -4" severity error;
         assert jump = '1'
@@ -332,7 +324,6 @@ begin
         report "=== TEST 20: JALR decode ===" severity note;
         inst_IF_ID_REGLN <= x"004080E7"; -- jalr x1, x1, 4
         wait for 1 ns;
-
         assert imm_ID_EX_LNREG = x"00000004"
             report "FAIL T20 imm should be 4" severity error;
         assert jump = '1'
@@ -351,11 +342,9 @@ begin
         data_WB_ID_LN      <= x"00000005";
         wait until rising_edge(clk);
         wait for 1 ns;
-
         reg_write_WB_ID_LN <= '0';
         inst_IF_ID_REGLN   <= x"002081B3"; -- add x3, x1, x2
         wait for 1 ns;
-
         assert op1_ID_EX_LNREG = x"00000005"
             report "FAIL T21 op1 should read back x1 = 5" severity error;
 
@@ -366,14 +355,11 @@ begin
         data_WB_ID_LN      <= x"0000000A";
         wait until rising_edge(clk);
         wait for 1 ns;
-
         reg_write_WB_ID_LN <= '0';
         inst_IF_ID_REGLN   <= x"002081B3"; -- add x3, x1, x2
         wait for 1 ns;
-
         assert op2_ID_EX_LNREG = x"0000000A"
             report "FAIL T22 op2 should read back x2 = 10" severity error;
-
 
         -- TEST 23: x0 must stay zero even if writeback tries to write it
         report "=== TEST 23: x0 remains zero ===" severity note;
@@ -382,7 +368,6 @@ begin
         data_WB_ID_LN      <= x"FFFFFFFF";
         wait until rising_edge(clk);
         wait for 1 ns;
-
         reg_write_WB_ID_LN <= '0';
         inst_IF_ID_REGLN   <= x"00000033"; -- add x0, x0, x0 => rs1=x0 rs2=x0
         wait for 1 ns;
@@ -390,7 +375,8 @@ begin
             report "FAIL T23 op1 x0 should remain zero" severity error;
         assert op2_ID_EX_LNREG = x"00000000"
             report "FAIL T23 op2 x0 should remain zero" severity error;
-
+            
+        -- tests done
         report "=== ALL TESTS COMPLETE ===" severity note;
         wait;
     end process;
