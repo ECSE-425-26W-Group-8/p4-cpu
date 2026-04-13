@@ -32,10 +32,6 @@ port(
 ); 
 end ID;
 
---The ID stage decodes the instruction, reads register values, and generates the immediate. 
---It passes these to EX. Later, we need to add control signals, clocked register writeback, 
---hazard detection, and ensure correct handling of branches, loads/stores, and instructions that write rd.
-
 architecture Behavioral of ID is
 	-- register file: 32 reg of 32 bits
     type reg_file_type is array(0 to 31) of std_logic_vector(31 downto 0);
@@ -260,6 +256,6 @@ end process;
     imm_ID_EX_LNREG <= imm_val;
     inst_ID_EX_LNREG <= inst_IF_ID_REGLN;
     -- Enforce x0 = 0
-    regs(0) <= (others => '0');
+    --regs(0) <= (others => '0');
 
 end Behavioral;
