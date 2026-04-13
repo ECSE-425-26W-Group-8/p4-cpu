@@ -6,10 +6,14 @@ entity MEM is
 port(
 	result_EX_MEM_REGLN     : in  std_logic_vector(31 downto 0);
 	op2Addr_EX_MEM_REGLN    : in  std_logic_vector(31 downto 0);
+    pc_EX_MEM_REGLN         : in  STD_LOGIC_VECTOR(31 downto 0);
+    npc_EX_MEM_REGLN        : in  STD_LOGIC_VECTOR(31 downto 0);
     inst_EX_MEM_REGLN       : in  std_logic_vector(31 downto 0);
 	data_MEM_WB_LNREG       : out std_logic_vector(31 downto 0);
     result_MEM_WB_LNREG     : out std_logic_vector(31 downto 0);
-	inst_MEM_WB_LNREG       : out std_logic_vector(31 downto 0);
+	pc_MEM_WB_LNREG         : out std_logic_vector(31 downto 0);
+	npc_MEM_WB_LNREG        : out std_logic_vector(31 downto 0);
+    inst_MEM_WB_LNREG       : out std_logic_vector(31 downto 0);
     clk                     : in STD_LOGIC;
 
     -- for control process

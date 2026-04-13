@@ -175,11 +175,13 @@ architecture Behavioral of processor is
     signal if_inst : std_logic_vector(31 downto 0);
 
     -- ID stage outputs (data)
-    signal id_pc  : std_logic_vector(31 downto 0);  -- addr_ID_EX_LNREG
-    signal id_op1 : std_logic_vector(31 downto 0);
-    signal id_op2 : std_logic_vector(31 downto 0);
-    signal id_imm : std_logic_vector(31 downto 0);
-    signal id_inst: std_logic_vector(31 downto 0);
+    signal id_pc    : std_logic_vector(31 downto 0);
+    signal id_npc   : std_logic_vector(31 downto 0);
+    signal id_op1   : std_logic_vector(31 downto 0);
+    signal id_op2   : std_logic_vector(31 downto 0);
+    signal id_imm   : std_logic_vector(31 downto 0);
+    signal id_inst  : std_logic_vector(31 downto 0);
+
     -- ID stage outputs (control)
     signal id_alu_src   : std_logic;
     signal id_alu_op    : std_logic_vector(3 downto 0);
@@ -193,29 +195,32 @@ architecture Behavioral of processor is
     -- EX stage outputs (data)
     signal ex_result      : std_logic_vector(31 downto 0);
     signal ex_op2         : std_logic_vector(31 downto 0);
+    signal ex_pc          : std_logic_vector(31 downto 0);
     signal ex_npc         : std_logic_vector(31 downto 0);
     signal ex_inst        : std_logic_vector(31 downto 0);
-    signal ex_branchTaken : std_logic;
     -- EX stage outputs (control)
+    signal ex_branchTaken : std_logic;
     signal ex_mem_read    : std_logic;
     signal ex_mem_write   : std_logic;
     signal ex_reg_write   : std_logic;
+    signal ex_branch      : std_logic;
     signal ex_jump        : std_logic;
     signal ex_wb_sel      : std_logic_vector(1 downto 0);
 
     -- MEM stage outputs (data)
     signal mem_data          : std_logic_vector(31 downto 0);
     signal mem_result        : std_logic_vector(31 downto 0);
-    signal mem_inst          : std_logic_vector(31 downto 0);
+    signal mem_pc            : std_logic_vector(31 downto 0);
     signal mem_npc           : std_logic_vector(31 downto 0);
-    signal mem_branch_target : std_logic_vector(31 downto 0);
-    signal mem_branchTaken   : std_logic;
+    signal mem_inst          : std_logic_vector(31 downto 0);
     -- MEM stage outputs (control)
     signal mem_reg_write : std_logic;
     signal mem_wb_sel    : std_logic_vector(1 downto 0);
-
+    signal mem_branch      : std_logic;
+    signal mem_jump        : std_logic;
     -- WB stage outputs
-    signal wb_data : std_logic_vector(31 downto 0);
+    signal wb_data      : std_logic_vector(31 downto 0);
+    signal wb_regwrite  : std_logic;
 
     -- =========================================================================
     -- Pipeline register signals (clocked, updated in pipeline_regs process)
@@ -246,6 +251,7 @@ architecture Behavioral of processor is
     -- EX/MEM register (data)
     signal exmem_result : std_logic_vector(31 downto 0) := (others => '0');
     signal exmem_op2    : std_logic_vector(31 downto 0) := (others => '0');
+    signal exmem_pc     : std_logic_vector(31 downto 0) := (others => '0');
     signal exmem_npc    : std_logic_vector(31 downto 0) := (others => '0');
     signal exmem_inst   : std_logic_vector(31 downto 0) := NOP;
     -- EX/MEM register (control)
@@ -253,23 +259,33 @@ architecture Behavioral of processor is
     signal exmem_mem_read    : std_logic := '0';
     signal exmem_mem_write   : std_logic := '0';
     signal exmem_reg_write   : std_logic := '0';
+    signal exmem_branch      : std_logic := '0';
     signal exmem_jump        : std_logic := '0';
     signal exmem_wb_sel      : std_logic_vector(1 downto 0) := (others => '0');
 
     -- MEM/WB register (data)
     signal memwb_data   : std_logic_vector(31 downto 0) := (others => '0');
     signal memwb_result : std_logic_vector(31 downto 0) := (others => '0');
+    signal memwb_pc    : std_logic_vector(31 downto 0) := (others => '0');
     signal memwb_npc    : std_logic_vector(31 downto 0) := (others => '0');
     signal memwb_inst   : std_logic_vector(31 downto 0) := NOP;
     -- MEM/WB register (control)
     signal memwb_reg_write : std_logic := '0';
     signal memwb_wb_sel    : std_logic_vector(1 downto 0) := (others => '0');
+    signal memwb_branch    : std_logic := '0';
+    signal memwb_jump      : std_logic := '0';
 
+    -- =========================================================================
+    -- Instruction Decode input signal to account for nop insertion while stalling
+    -- =========================================================================
+    signal idin_pc   : std_logic_vector(31 downto 0) := (others => '0');
+    signal idin_npc  : std_logic_vector(31 downto 0) := (others => '0');
+    signal idin_inst : std_logic_vector(31 downto 0) := NOP;
     -- =========================================================================
     -- Hazard and flush control
     -- =========================================================================
-    signal stall        : std_logic;
-    signal branch_flush : std_logic;
+    signal stall        : std_logic := 0;
+    signal branch_flush : std_logic := 0;
 
 begin
 
@@ -287,8 +303,8 @@ begin
     if_stage : InstructionFetch port map(
         clk                 => clk,
         stall               => stall,
-        branchTake_EX_IF_LN => mem_branchTaken,
-        result_EX_IF_REGLN  => mem_branch_target,
+        branchTake_EX_IF_LN => exmem_branchTaken,
+        result_EX_IF_REGLN  => exmem_result,
         pc_IF_ID_LNREG      => if_pc,
         npc_IF_ID_LNREG     => if_npc,
         inst_IF_ID_LNREG    => if_inst
@@ -297,16 +313,18 @@ begin
     -- --- ID Stage ---
     id_stage : ID port map(
         clk               => clk,
-        addr_IF_ID_REGLN  => ifid_pc,
-        inst_IF_ID_REGLN  => ifid_inst,
-        data_WB_ID_LN     => wb_data,
-        inst_MEM_WB_REGLN => memwb_inst,
-        addr_ID_EX_LNREG  => id_pc,
+        pc_IF_ID_REGLN    => idin_pc,
+        npc_IF_ID_REGLN   => idin_npc,
+        inst_IF_ID_REGLN  => idin_inst,
+        pc_ID_EX_LNREG    => id_pc,
+        npc_ID_EX_LNREG   => id_npc,
         op1_ID_EX_LNREG   => id_op1,
         op2_ID_EX_LNREG   => id_op2,
         imm_ID_EX_LNREG   => id_imm,
         inst_ID_EX_LNREG  => id_inst,
-        inst_MEM_ID_REGLN => open,  -- undriven output (see validation.md issue 8)
+        reg_write_WB_ID_LN => wb_regwrite,
+        data_WB_ID_LN     => wb_data,
+        inst_MEM_WB_REGLN => memwb_inst,
         alu_src           => id_alu_src,
         alu_op            => id_alu_op,
         mem_read          => id_mem_read,
@@ -319,31 +337,31 @@ begin
 
     -- --- EX Stage ---
     ex_stage : EX port map(
-        clk                      => clk,
         addr_ID_EX_REGLN         => idex_pc,
-        npc_ID_EX_REGLN          => idex_npc,
+        npc_ID_EX_REGLN          => idex_npc, -- missing from EX
         op1_ID_EX_REGLN          => idex_op1,
         op2_ID_EX_REGLN          => idex_op2,
         imm_ID_EX_REGLN          => idex_imm,
         inst_ID_EX_REGLN         => idex_inst,
-        alu_src_ID_EX_REGLN      => idex_alu_src,
-        alu_op_ID_EX_REGLN       => idex_alu_op,
-        mem_read_ID_EX_REGLN     => idex_mem_read,
-        mem_write_ID_EX_REGLN    => idex_mem_write,
-        reg_write_ID_EX_REGLN    => idex_reg_write,
-        branch_ID_EX_REGLN       => idex_branch,
-        jump_ID_EX_REGLN         => idex_jump,
-        wb_sel_ID_EX_REGLN       => idex_wb_sel,
+        alu_src                  => idex_alu_src,
+        alu_op                   => idex_alu_op,
+        branch                   => idex_branch,
+        jump                     => idex_jump,
+        mem_read_in              => idex_mem_read,
+        mem_write_in             => idex_mem_write,
+        reg_write_in             => idex_reg_write,
+        wb_sel_in                => idex_wb_sel,
+        branchTake_EX_IF_LNREG   => ex_branchTaken,
         result_EX_MEM_LNREG      => ex_result,
-        op2_EX_MEM_LNREG         => ex_op2,
-        npc_EX_MEM_LNREG         => ex_npc,
+        op2Addr_EX_MEM_LNREG     => ex_op2,
+        npc_EX_MEM_LNREG         => ex_npc, --missing from EX
         inst_EX_MEM_LNREG        => ex_inst,
-        branchTaken_EX_MEM_LNREG => ex_branchTaken,
-        mem_read_EX_MEM_LNREG    => ex_mem_read,
-        mem_write_EX_MEM_LNREG   => ex_mem_write,
-        reg_write_EX_MEM_LNREG   => ex_reg_write,
-        jump_EX_MEM_LNREG        => ex_jump,
-        wb_sel_EX_MEM_LNREG      => ex_wb_sel
+        mem_read_out             => ex_mem_read,
+        mem_write_out            => ex_mem_write,
+        reg_write_out            => ex_reg_write,
+        jump_out                 => ex_jump,
+        wb_sel_out               => ex_wb_sel
+        -- remove alu_src and alu_op
     );
 
     -- --- MEM Stage ---
@@ -351,39 +369,37 @@ begin
         clk                     => clk,
         result_EX_MEM_REGLN     => exmem_result,
         op2Addr_EX_MEM_REGLN    => exmem_op2,
-        inst_EX_MEM_REGLN       => exmem_inst,
+        pc_EX_MEM_REGLN         => exmem_inst,
         npc_EX_MEM_REGLN        => exmem_npc,
-        branchTake_EX_MEM_REGLN => exmem_branchTaken,
         mem_read_EX_MEM_REGLN   => exmem_mem_read,
         mem_write_EX_MEM_REGLN  => exmem_mem_write,
         reg_write_EX_MEM_REGLN  => exmem_reg_write,
         wb_sel_EX_MEM_REGLN     => exmem_wb_sel,
-        branch_EX_MEM_REGLN     => '0',
+        branch_EX_MEM_REGLN     => exmem_branch,
         jump_EX_MEM_REGLN       => exmem_jump,
         data_MEM_WB_LNREG       => mem_data,
         result_MEM_WB_LNREG     => mem_result,
         inst_MEM_WB_LNREG       => mem_inst,
+        pc_MEM_WB_LNREG         => mem_pc,
         npc_MEM_WB_LNREG        => mem_npc,
-        result_EX_IF_LN         => mem_branch_target,
-        branchTake_MEM_IF_LN    => mem_branchTaken,
         reg_write_MEM_WB_LNREG  => mem_reg_write,
         wb_sel_MEM_WB_LNREG     => mem_wb_sel,
-        branch_MEM_WB_LNREG     => open,
-        jump_MEM_WB_LNREG       => open
+        branch_MEM_WB_LNREG     => mem_branch,
+        jump_MEM_WB_LNREG       => mem_jump
     );
 
     -- --- WB Stage ---
     wb_stage : WB port map(
         data_MEM_WB_REGLN      => memwb_data,
         result_MEM_WB_REGLN    => memwb_result,
-        pc_MEM_WB_REGLN        => (others => '0'),  -- pc unused by WB; npc carries link addr
+        pc_MEM_WB_REGLN        => memwb_pc,
         npc_MEM_WB_REGLN       => memwb_npc,
         reg_write_MEM_WB_REGLN => memwb_reg_write,
         wb_sel_MEM_WB_REGLN    => memwb_wb_sel,
-        branch_MEM_WB_REGLN    => '0',
-        jump_MEM_WB_REGLN      => '0',
+        branch_MEM_WB_REGLN    => memwb_branch,
+        jump_MEM_WB_REGLN      => memwb_jump,
         data_WB_ID_LN          => wb_data,
-        reg_write_WB_ID_LN     => open   -- ID gates writeback via opcode decode
+        reg_write_WB_ID_LN     => wb_regwrite
     );
 
     -- --- Hazard Detection ---
@@ -397,6 +413,11 @@ begin
         regWrite_MEM => exmem_reg_write,
         stall        => stall
     );
+
+    -- --- input to Instruction decode with stalls ---
+    idin_inst <= NOP when stall = '0' else ifid_inst;
+    idin_pc   <= NOP when stall = '0' else ifid_pc;
+    idin_npc  <= NOP when stall = '0' else ifid_npc;
 
     -- =========================================================================
     -- Pipeline register update process
@@ -426,21 +447,26 @@ begin
             -- EX/MEM
             exmem_result      <= (others => '0');
             exmem_op2         <= (others => '0');
+            exmem_pc          <= (others => '0');
             exmem_npc         <= (others => '0');
             exmem_inst        <= NOP;
             exmem_branchTaken <= '0';
             exmem_mem_read    <= '0';
             exmem_mem_write   <= '0';
             exmem_reg_write   <= '0';
+            exmem_branch      <= '0';
             exmem_jump        <= '0';
             exmem_wb_sel      <= (others => '0');
             -- MEM/WB
             memwb_data      <= (others => '0');
             memwb_result    <= (others => '0');
+            memwb_pc        <= (others => '0');
             memwb_npc       <= (others => '0');
             memwb_inst      <= NOP;
             memwb_reg_write <= '0';
             memwb_wb_sel    <= (others => '0');
+            mem_branch      <= '0';
+            mem_jump        <= '0';
 
         elsif rising_edge(clk) then
 
@@ -456,23 +482,27 @@ begin
             if branch_flush = '1' then
                 exmem_result      <= (others => '0');
                 exmem_op2         <= (others => '0');
+                exmem_pc          <= (others => '0');
                 exmem_npc         <= (others => '0');
                 exmem_inst        <= NOP;
                 exmem_branchTaken <= '0';
                 exmem_mem_read    <= '0';
                 exmem_mem_write   <= '0';
                 exmem_reg_write   <= '0';
+                exmem_branch      <= '0';
                 exmem_jump        <= '0';
                 exmem_wb_sel      <= (others => '0');
             else
                 exmem_result      <= ex_result;
                 exmem_op2         <= ex_op2;
+                exmem_pc          <= ex_npc;
                 exmem_npc         <= ex_npc;
                 exmem_inst        <= ex_inst;
                 exmem_branchTaken <= ex_branchTaken;
                 exmem_mem_read    <= ex_mem_read;
                 exmem_mem_write   <= ex_mem_write;
                 exmem_reg_write   <= ex_reg_write;
+                exmem_branch      <= ex_branch;
                 exmem_jump        <= ex_jump;
                 exmem_wb_sel      <= ex_wb_sel;
             end if;
