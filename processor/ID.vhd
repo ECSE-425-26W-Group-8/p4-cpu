@@ -188,7 +188,7 @@ begin
                 when "110" => -- func3 is 0x6
                     alu_op <= "0100"; -- OR
 				when "001" => -- func3 is 0x1
-					alu_op <= "0101"; -- sll log shift left
+					alu_op <= "1000"; -- sll log shift left
 				when "101" => -- func3 is 0x5
 					if funct7 = "0000000" then -- 0x00
 						alu_op <= "0110";	-- srl
