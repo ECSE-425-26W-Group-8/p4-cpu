@@ -91,7 +91,7 @@ add wave -label     "PC"    -noupdate   -radix hex  $UUT/exmem_pc
 add wave -label     "NPC"    -noupdate  -radix hex  $UUT/exmem_npc
 add wave -label     "IR"    -noupdate  -radix hex  $UUT/exmem_inst
 add wave -label     "result"    -noupdate  -radix hex  $UUT/exmem_result
-add wave -label     "memory address"    -noupdate  -radix hex  $UUT/exmem_op2
+add wave -label     "op2"    -noupdate  -radix hex  $UUT/exmem_op2
 add wave -label     "memory read"    -noupdate  -radix hex  $UUT/exmem_mem_read
 add wave -label     "memory write"    -noupdate  -radix hex  $UUT/exmem_mem_write
 add wave -label     "branch taken"    -noupdate  -radix hex  $UUT/exmem_branch_taken

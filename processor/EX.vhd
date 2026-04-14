@@ -143,7 +143,7 @@ begin
 		
 	end process;
 	
-	op2_EX_MEM_LNREG 	<= op1_ID_EX_REGLN;
+	op2_EX_MEM_LNREG 	<= op2_ID_EX_REGLN;
 	inst_EX_MEM_LNREG 		<= inst_ID_EX_REGLN;
     npc_EX_MEM_LNREG        <= npc_ID_EX_REGLN;
     pc_EX_MEM_LNREG         <= pc_ID_EX_REGLN;
