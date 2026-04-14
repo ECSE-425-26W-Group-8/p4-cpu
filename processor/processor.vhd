@@ -170,6 +170,8 @@ architecture Behavioral of processor is
         regWrite_EX  : in  std_logic;
         rd_MEM       : in  std_logic_vector(4 downto 0);
         regWrite_MEM : in  std_logic;
+        rd_WB        : in std_logic_vector(4 downto 0);
+        regWrite_WB  : in std_logic;
         stall        : out std_logic
     );
     end component;
@@ -422,6 +424,8 @@ begin
         rd_EX        => idex_inst(11 downto  7),
         regWrite_EX  => idex_reg_write,
         rd_MEM       => exmem_inst(11 downto 7),
+        rd_WB        => memwb_inst(11 downto 7),
+        regWrite_WB  => memwb_reg_write,
         regWrite_MEM => exmem_reg_write,
         stall        => stall
     );

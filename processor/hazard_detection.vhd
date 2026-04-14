@@ -13,6 +13,9 @@ port(
     rd_MEM : in std_logic_vector(4 downto 0);
     regWrite_MEM : in std_logic;
 
+    rd_WB : in std_logic_vector(4 downto 0);
+    regWrite_WB : in std_logic;
+
     stall : out std_logic
 );
 end hazard_detection;
@@ -20,7 +23,7 @@ end hazard_detection;
 architecture rtl of hazard_detection is
 begin
 
-    process(rs1_ID, rs2_ID, opcode_ID, rd_EX, regWrite_EX, rd_MEM, regWrite_MEM)
+    process(rs1_ID, rs2_ID, opcode_ID, rd_EX, regWrite_EX, rd_MEM, regWrite_MEM, rd_WB, regWrite_WB)
         variable useRs1 : std_logic;
         variable useRs2 : std_logic;
     begin
@@ -70,6 +73,12 @@ begin
         if (regWrite_MEM = '1' and rd_MEM /= "00000" and
             ((useRs1 = '1' and rd_MEM = rs1_ID) or
              (useRs2 = '1' and rd_MEM = rs2_ID))) then
+            stall <= '1';
+        end if;
+
+        if (regWrite_WB = '1' and rd_WB /= "00000" and
+            ((useRs1 = '1' and rd_WB = rs1_ID) or
+             (useRs2 = '1' and rd_WB = rs2_ID))) then
             stall <= '1';
         end if;
     end process;
