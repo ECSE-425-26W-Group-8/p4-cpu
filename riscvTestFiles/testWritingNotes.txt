@@ -39,3 +39,8 @@ jalr	# returns to x1 when we used jal earlier to branch q
 
 lui
 auipc
+
+all conditional branches taken and not taken
+load and store work repeatedly
+jump&link work well
+all math operations work well
