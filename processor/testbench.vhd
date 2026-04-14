@@ -37,7 +37,7 @@ begin
     stim : process
     begin
         -- Hold reset for 5 clock cycles
-        wait for 5 ns;
+        wait for 2 ns;
         reset <= '0';
         -- Run for 10,000 clock cycles
         wait for 10000 ns;

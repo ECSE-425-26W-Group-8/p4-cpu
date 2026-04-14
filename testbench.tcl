@@ -14,49 +14,60 @@
 #   6. Dumps the register file to register_file.txt (32 registers).
 ################################################################################
 
+set MEM_DIR   "memory_module"
+set PROC_DIR  "processor"
+set TB_ENTITY "testbench"
+
+set UUT "/$TB_ENTITY/uut"
+
+set IMEM "$UUT/if_stage/instruction_mem/ram_block"
+set DMEM "$UUT/mem_stage/data_mem/ram_block"
+set REGFILE "$UUT/id_stage/regs"
+
 # ── 0. Source helper TCL procedures ──────────────────────────────────────────
-source ../memory_module/clear_mem.tcl
-source ../memory_module/load_mem.tcl
-source ../memory_module/dump_mem.tcl
+source ./memory_module/clear_mem.tcl
+source ./memory_module/load_mem.tcl
+source ./memory_module/dump_mem.tcl
 
 # ── 1. Compile all VHDL files ────────────────────────────────────────────────
 vlib work
 
-vcom -work work ../memory_module/memory.vhd
-vcom -work work InstructionFetch.vhd
-vcom -work work ID.vhd
-vcom -work work EX.vhd
-vcom -work work MEM.vhd
-vcom -work work WB.vhd
-vcom -work work hazard_detection.vhd
-vcom -work work processor.vhd
-vcom -work work testbench.vhd
+vcom -2008 $MEM_DIR/memory.vhd
+vcom -2008 "$PROC_DIR/InstructionFetch.vhd"
+vcom -2008 "$PROC_DIR/ID.vhd"
+vcom -2008 "$PROC_DIR/EX.vhd"
+vcom -2008 "$PROC_DIR/MEM.vhd"
+vcom -2008 "$PROC_DIR/WB.vhd"
+vcom -2008 "$PROC_DIR/hazard_detection.vhd"
+vcom -2008 "$PROC_DIR/processor.vhd"
+vcom -2008 "$PROC_DIR/testbench.vhd"
 
 # ── 2. Load simulation ────────────────────────────────────────────────────────
-vsim -t 1ns work.testbench
+vsim -voptargs="+acc" $TB_ENTITY
+
+
+
 
 # ── 3. Clear and load instruction memory ─────────────────────────────────────
-# Hierarchy path: testbench → uut (processor) → if_stage (InstructionFetch)
-#                 → instruction_mem (memory component) → ram (internal array)
-set IMEM /testbench/uut/if_stage/instruction_mem/ram
 
+clear_mem $DMEM
 clear_mem $IMEM
 load_riscv_bin program.txt $IMEM
 
-# ── 4. Run 10,000 clock cycles ───────────────────────────────────────────────
-run 10000 ns
+# ── 4. Run 10,000 clock cycles + reset ───────────────────────────────────────────────
+run 10005 ns
 
 # ── 5. Dump data memory ───────────────────────────────────────────────────────
 # Hierarchy path: testbench → uut → mem_stage (MEM) → data_mem (memory) → ram
-set DMEM /testbench/uut/mem_stage/data_mem/ram
 
+# TODO rename to right output
 dump_mem $DMEM memory.txt 8192
 
 # ── 6. Dump register file ─────────────────────────────────────────────────────
 # The register file lives inside the ID stage as signal 'regs'.
 # ModelSim exposes it as a memory-like object addressable by register index.
-set REGFILE /testbench/uut/id_stage/regs
 
+# TODO rename to right output
 set fp [open register_file.txt w]
 for {set i 0} {$i < 32} {incr i} {
     # Each element of regs is 32 bits wide; read as a single entry.
@@ -67,5 +78,4 @@ for {set i 0} {$i < 32} {incr i} {
 }
 close $fp
 
-echo "--- Register file dumped to register_file.txt ---"
 echo "--- Simulation complete ---"

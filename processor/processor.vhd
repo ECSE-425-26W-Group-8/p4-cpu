@@ -11,7 +11,7 @@
 --      EX/MEM, MEM/WB) in a single clocked process.
 --   3. Implement stall logic (freeze IF/ID, insert NOP into ID/EX).
 --   4. Implement flush logic (3-cycle branch/jump penalty: flush IF/ID, ID/EX,
---      EX/MEM when exmem_branchTaken is asserted).
+--      EX/MEM when exmem_branch_taken is asserted).
 --
 -- Signal naming:
 --   if_*, id_*, ex_*, mem_*, wb_*  : combinational outputs of each stage
@@ -54,31 +54,34 @@ architecture Behavioral of processor is
 
     component ID is
     port(
-        clk               : in  std_logic;
-        addr_IF_ID_REGLN  : in  std_logic_vector(31 downto 0);
-        inst_IF_ID_REGLN  : in  std_logic_vector(31 downto 0);
-        data_WB_ID_LN     : in  std_logic_vector(31 downto 0);
-        inst_MEM_WB_REGLN : in  std_logic_vector(31 downto 0);
-        addr_ID_EX_LNREG  : out std_logic_vector(31 downto 0);
-        op1_ID_EX_LNREG   : out std_logic_vector(31 downto 0);
-        op2_ID_EX_LNREG   : out std_logic_vector(31 downto 0);
-        imm_ID_EX_LNREG   : out std_logic_vector(31 downto 0);
-        inst_ID_EX_LNREG  : out std_logic_vector(31 downto 0);
-        inst_MEM_ID_REGLN : out std_logic_vector(31 downto 0);  -- undriven output, left open
-        alu_src           : out std_logic;
-        alu_op            : out std_logic_vector(3 downto 0);
-        mem_read          : out std_logic;
-        mem_write         : out std_logic;
-        reg_write         : out std_logic;
-        branch            : out std_logic;
-        jump              : out std_logic;
-        wb_sel            : out std_logic_vector(1 downto 0)
+        clk: in std_logic;
+        pc_IF_ID_REGLN 	: in std_logic_vector(31 downto 0);
+        npc_IF_ID_REGLN 	: in std_logic_vector(31 downto 0);
+        inst_IF_ID_REGLN 	: in std_logic_vector(31 downto 0);
+        pc_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
+        npc_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
+        op1_ID_EX_LNREG		: out std_logic_vector(31 downto 0);
+        op2_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
+        imm_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
+        inst_ID_EX_LNREG 	: out std_logic_vector(31 downto 0);
+        -- inst_MEM_ID_REGLN	: out std_logic_vector(31 downto 0);
+        reg_write_WB_ID_LN  : in STD_LOGIC;
+        data_WB_ID_LN		: in std_logic_vector(31 downto 0);
+        inst_MEM_WB_REGLN : in std_logic_vector(31 downto 0);
+        -- for control process
+        alu_src: out std_logic; -- tell rest of CPU to use imm or reg
+        alu_op : out std_logic_vector(3 downto 0); -- what ALU does
+        mem_read: out std_logic; -- mem access
+        mem_write: out std_logic; -- mem access
+        reg_write: out std_logic; -- write to reg
+        branch: out std_logic; -- control flow
+        jump: out std_logic; -- control flow
+        wb_sel: out std_logic_vector(1 downto 0) --what to write back
     );
     end component;
 
     component EX is
     port(
-        clk                      : in  std_logic;
         -- Data inputs
         addr_ID_EX_REGLN         : in  std_logic_vector(31 downto 0);
         npc_ID_EX_REGLN          : in  std_logic_vector(31 downto 0);
@@ -87,54 +90,58 @@ architecture Behavioral of processor is
         imm_ID_EX_REGLN          : in  std_logic_vector(31 downto 0);
         inst_ID_EX_REGLN         : in  std_logic_vector(31 downto 0);
         -- Control inputs
-        alu_src_ID_EX_REGLN      : in  std_logic;
-        alu_op_ID_EX_REGLN       : in  std_logic_vector(3 downto 0);
-        mem_read_ID_EX_REGLN     : in  std_logic;
-        mem_write_ID_EX_REGLN    : in  std_logic;
-        reg_write_ID_EX_REGLN    : in  std_logic;
-        branch_ID_EX_REGLN       : in  std_logic;
-        jump_ID_EX_REGLN         : in  std_logic;
-        wb_sel_ID_EX_REGLN       : in  std_logic_vector(1 downto 0);
+        alu_src		: in std_logic; 	-- 1 for imm, 0 for registers
+        alu_op 		: in std_logic_vector(3 downto 0); -- ALU operations
+        branch		: in std_logic; -- control flow
+        jump		: in std_logic; -- control flow
+        
+        mem_read_in		: in std_logic; -- mem access
+        mem_write_in	: in std_logic; -- mem access
+        reg_write_in	: in std_logic; -- write to reg
+        wb_sel_in		: in std_logic_vector(1 downto 0); --what to write back
         -- Data outputs
         result_EX_MEM_LNREG      : out std_logic_vector(31 downto 0);
         op2_EX_MEM_LNREG         : out std_logic_vector(31 downto 0);
         npc_EX_MEM_LNREG         : out std_logic_vector(31 downto 0);
         inst_EX_MEM_LNREG        : out std_logic_vector(31 downto 0);
-        branchTaken_EX_MEM_LNREG : out std_logic;
+        branch_taken_EX_MEM_LNREG : out std_logic;
         -- Control outputs
-        mem_read_EX_MEM_LNREG    : out std_logic;
-        mem_write_EX_MEM_LNREG   : out std_logic;
-        reg_write_EX_MEM_LNREG   : out std_logic;
-        jump_EX_MEM_LNREG        : out std_logic;
-        wb_sel_EX_MEM_LNREG      : out std_logic_vector(1 downto 0)
+        branch_out		: out std_logic; -- control flow
+        jump_out		: out std_logic; -- control flow
+        mem_read_out	: out std_logic; -- mem access
+        mem_write_out	: out std_logic; -- mem access
+        reg_write_out	: out std_logic; -- write to reg
+        wb_sel_out		: out std_logic_vector(1 downto 0) --what to write back
     );
     end component;
 
     component MEM is
     port(
-        clk                     : in  std_logic;
         result_EX_MEM_REGLN     : in  std_logic_vector(31 downto 0);
-        op2Addr_EX_MEM_REGLN    : in  std_logic_vector(31 downto 0);
+        op2_EX_MEM_REGLN    : in  std_logic_vector(31 downto 0);
+        pc_EX_MEM_REGLN         : in  STD_LOGIC_VECTOR(31 downto 0);
+        npc_EX_MEM_REGLN        : in  STD_LOGIC_VECTOR(31 downto 0);
         inst_EX_MEM_REGLN       : in  std_logic_vector(31 downto 0);
-        npc_EX_MEM_REGLN        : in  std_logic_vector(31 downto 0);
-        branchTake_EX_MEM_REGLN : in  std_logic;
-        mem_read_EX_MEM_REGLN   : in  std_logic;
-        mem_write_EX_MEM_REGLN  : in  std_logic;
-        reg_write_EX_MEM_REGLN  : in  std_logic;
-        wb_sel_EX_MEM_REGLN     : in  std_logic_vector(1 downto 0);
-        branch_EX_MEM_REGLN     : in  std_logic;
-        jump_EX_MEM_REGLN       : in  std_logic;
         data_MEM_WB_LNREG       : out std_logic_vector(31 downto 0);
         result_MEM_WB_LNREG     : out std_logic_vector(31 downto 0);
-        inst_MEM_WB_LNREG       : out std_logic_vector(31 downto 0);
+        pc_MEM_WB_LNREG         : out std_logic_vector(31 downto 0);
         npc_MEM_WB_LNREG        : out std_logic_vector(31 downto 0);
-        result_EX_IF_LN         : out std_logic_vector(31 downto 0);
-        branchTake_MEM_IF_LN    : out std_logic;
+        inst_MEM_WB_LNREG       : out std_logic_vector(31 downto 0);
+        clk                     : in STD_LOGIC;
+
+        mem_read_EX_MEM_REGLN   : in  std_logic;
+        mem_write_EX_MEM_REGLN  : in  std_logic;
+
+        reg_write_EX_MEM_REGLN  : in  std_logic;
         reg_write_MEM_WB_LNREG  : out std_logic;
-        wb_sel_MEM_WB_LNREG     : out std_logic_vector(1 downto 0);
+        wb_sel_EX_MEM_REGLN     : in std_logic_vector(1 downto 0); 
+        wb_sel_MEM_WB_LNREG      : out std_logic_vector(1 downto 0);
+
+        branch_EX_MEM_REGLN     : in std_logic;
         branch_MEM_WB_LNREG     : out std_logic;
+        jump_EX_MEM_REGLN       : in std_logic;
         jump_MEM_WB_LNREG       : out std_logic
-    );
+        );
     end component;
 
     component WB is
@@ -199,7 +206,7 @@ architecture Behavioral of processor is
     signal ex_npc         : std_logic_vector(31 downto 0);
     signal ex_inst        : std_logic_vector(31 downto 0);
     -- EX stage outputs (control)
-    signal ex_branchTaken : std_logic;
+    signal ex_branch_taken : std_logic;
     signal ex_mem_read    : std_logic;
     signal ex_mem_write   : std_logic;
     signal ex_reg_write   : std_logic;
@@ -255,7 +262,7 @@ architecture Behavioral of processor is
     signal exmem_npc    : std_logic_vector(31 downto 0) := (others => '0');
     signal exmem_inst   : std_logic_vector(31 downto 0) := NOP;
     -- EX/MEM register (control)
-    signal exmem_branchTaken : std_logic := '0';
+    signal exmem_branch_taken : std_logic := '0';
     signal exmem_mem_read    : std_logic := '0';
     signal exmem_mem_write   : std_logic := '0';
     signal exmem_reg_write   : std_logic := '0';
@@ -284,16 +291,16 @@ architecture Behavioral of processor is
     -- =========================================================================
     -- Hazard and flush control
     -- =========================================================================
-    signal stall        : std_logic := 0;
-    signal branch_flush : std_logic := 0;
+    signal stall        : std_logic := '0';
+    signal branch_flush : std_logic := '0';
 
 begin
 
     -- =========================================================================
-    -- Flush signal: assert on the cycle exmem_branchTaken or exmem_jump is '1'
+    -- Flush signal: assert on the cycle exmem_branch_taken or exmem_jump is '1'
     -- (3-cycle penalty: flushes IF/ID, ID/EX, and EX/MEM on that cycle)
     -- =========================================================================
-    branch_flush <= exmem_branchTaken or exmem_jump;
+    branch_flush <= exmem_branch_taken or exmem_jump;
 
     -- =========================================================================
     -- Component instantiations
@@ -303,7 +310,7 @@ begin
     if_stage : InstructionFetch port map(
         clk                 => clk,
         stall               => stall,
-        branchTake_EX_IF_LN => exmem_branchTaken,
+        branchTake_EX_IF_LN => exmem_branch_taken,
         result_EX_IF_REGLN  => exmem_result,
         pc_IF_ID_LNREG      => if_pc,
         npc_IF_ID_LNREG     => if_npc,
@@ -351,9 +358,9 @@ begin
         mem_write_in             => idex_mem_write,
         reg_write_in             => idex_reg_write,
         wb_sel_in                => idex_wb_sel,
-        branchTake_EX_IF_LNREG   => ex_branchTaken,
+        branch_taken_EX_MEM_LNREG=> ex_branch_taken,
         result_EX_MEM_LNREG      => ex_result,
-        op2Addr_EX_MEM_LNREG     => ex_op2,
+        op2_EX_MEM_LNREG     => ex_op2,
         npc_EX_MEM_LNREG         => ex_npc, --missing from EX
         inst_EX_MEM_LNREG        => ex_inst,
         mem_read_out             => ex_mem_read,
@@ -368,8 +375,9 @@ begin
     mem_stage : MEM port map(
         clk                     => clk,
         result_EX_MEM_REGLN     => exmem_result,
-        op2Addr_EX_MEM_REGLN    => exmem_op2,
-        pc_EX_MEM_REGLN         => exmem_inst,
+        op2_EX_MEM_REGLN        => exmem_op2,
+        pc_EX_MEM_REGLN         => exmem_pc,
+        inst_EX_MEM_REGLN       => exmem_inst,
         npc_EX_MEM_REGLN        => exmem_npc,
         mem_read_EX_MEM_REGLN   => exmem_mem_read,
         mem_write_EX_MEM_REGLN  => exmem_mem_write,
@@ -450,7 +458,7 @@ begin
             exmem_pc          <= (others => '0');
             exmem_npc         <= (others => '0');
             exmem_inst        <= NOP;
-            exmem_branchTaken <= '0';
+            exmem_branch_taken <= '0';
             exmem_mem_read    <= '0';
             exmem_mem_write   <= '0';
             exmem_reg_write   <= '0';
@@ -485,7 +493,7 @@ begin
                 exmem_pc          <= (others => '0');
                 exmem_npc         <= (others => '0');
                 exmem_inst        <= NOP;
-                exmem_branchTaken <= '0';
+                exmem_branch_taken <= '0';
                 exmem_mem_read    <= '0';
                 exmem_mem_write   <= '0';
                 exmem_reg_write   <= '0';
@@ -498,7 +506,7 @@ begin
                 exmem_pc          <= ex_npc;
                 exmem_npc         <= ex_npc;
                 exmem_inst        <= ex_inst;
-                exmem_branchTaken <= ex_branchTaken;
+                exmem_branch_taken <= ex_branch_taken;
                 exmem_mem_read    <= ex_mem_read;
                 exmem_mem_write   <= ex_mem_write;
                 exmem_reg_write   <= ex_reg_write;

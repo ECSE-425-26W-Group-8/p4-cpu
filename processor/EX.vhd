@@ -5,6 +5,7 @@ use ieee.numeric_std.all;
 entity EX is
 port(
 	addr_ID_EX_REGLN 		: in std_logic_vector(31 downto 0);
+    npc_ID_EX_REGLN          : in  std_logic_vector(31 downto 0);
 	op1_ID_EX_REGLN 		: in std_logic_vector(31 downto 0);
 	op2_ID_EX_REGLN 		: in std_logic_vector(31 downto 0);
 	imm_ID_EX_REGLN 		: in std_logic_vector(31 downto 0);
@@ -21,13 +22,12 @@ port(
 	wb_sel_in		: in std_logic_vector(1 downto 0); --what to write back
 
 	
-	branchTake_EX_IF_LNREG 	: out std_logic_vector(31 downto 0);
+	branch_taken_EX_MEM_LNREG 	: out std_logic;
 	result_EX_MEM_LNREG 	: out std_logic_vector(31 downto 0);
-	op2Addr_EX_MEM_LNREG 	: out std_logic_vector(31 downto 0);
+	op2_EX_MEM_LNREG 	: out std_logic_vector(31 downto 0);
 	inst_EX_MEM_LNREG 		: out std_logic_vector(31 downto 0);
+    npc_EX_MEM_LNREG         : out std_logic_vector(31 downto 0);
 	
-	alu_src_out		: out std_logic; 	-- 1 for imm, 0 for registers
-	alu_op_out 		: out std_logic_vector(3 downto 0); -- ALU operations
 	branch_out		: out std_logic; -- control flow
 	jump_out		: out std_logic; -- control flow
 	mem_read_out	: out std_logic; -- mem access
@@ -128,7 +128,7 @@ begin
 		end if;
 		
 		if (branch = '1' AND branchOut = '1') then
-			branchTake_EX_IF_LNREG <= x"00000001";
+			branch_taken_EX_MEM_LNREG <= '1';
 			result_EX_MEM_LNREG <= std_logic_vector(op1 + op2);
 		elsif jump = '1' then
 			if alu_op = "1100" then	-- jalr
@@ -136,12 +136,21 @@ begin
 			else
 				result_EX_MEM_LNREG <= std_logic_vector(op1 + op2);	-- jal
 			end if;
-		else branchTake_EX_IF_LNREG <= (others => '0');
+		else branch_taken_EX_MEM_LNREG <= '0';
 		end if;
 		
 	end process;
 	
-	op2Addr_EX_MEM_LNREG 	<= op1_ID_EX_REGLN;
+	op2_EX_MEM_LNREG 	<= op1_ID_EX_REGLN;
 	inst_EX_MEM_LNREG 		<= inst_ID_EX_REGLN;
+    npc_EX_MEM_LNREG        <= npc_ID_EX_REGLN;
+
+
+	branch_out      <= branch;
+	jump_out <= jump;
+	mem_read_out <= mem_read_in;
+	mem_write_out <= mem_write_in;
+	reg_write_out <= reg_write_in;
+	wb_sel_out <= wb_sel_in;
 	
 end Behavioral;

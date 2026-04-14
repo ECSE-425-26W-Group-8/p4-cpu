@@ -5,7 +5,7 @@ use IEEE.numeric_std.all;
 entity MEM is
 port(
 	result_EX_MEM_REGLN     : in  std_logic_vector(31 downto 0);
-	op2Addr_EX_MEM_REGLN    : in  std_logic_vector(31 downto 0);
+	op2_EX_MEM_REGLN    : in  std_logic_vector(31 downto 0);
     pc_EX_MEM_REGLN         : in  STD_LOGIC_VECTOR(31 downto 0);
     npc_EX_MEM_REGLN        : in  STD_LOGIC_VECTOR(31 downto 0);
     inst_EX_MEM_REGLN       : in  std_logic_vector(31 downto 0);
@@ -72,7 +72,7 @@ begin
         memread => mem_read_EX_MEM_REGLN,
         memwrite => mem_write_EX_MEM_REGLN,
         readdata => data_MEM_WB_LNREG,
-        writedata => op2Addr_EX_MEM_REGLN
+        writedata => op2_EX_MEM_REGLN
         -- ,
         -- waitrequest => s_waitrequest
     );
@@ -93,4 +93,6 @@ begin
     jump_MEM_WB_LNREG       <= jump_EX_MEM_REGLN;
 
 
+	pc_MEM_WB_LNREG <= pc_EX_MEM_REGLN;
+	npc_MEM_WB_LNREG <= npc_EX_MEM_REGLN;
 end Behavioral;
