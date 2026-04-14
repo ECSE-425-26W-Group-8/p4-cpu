@@ -2,6 +2,10 @@
 work
 transcript
 
+.pyc
+
+__pycache__
+
 *.mti
 *wlf*
 
