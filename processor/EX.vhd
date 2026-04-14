@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 entity EX is
 port(
-	addr_ID_EX_REGLN 		: in std_logic_vector(31 downto 0);
+	pc_ID_EX_REGLN 		: in std_logic_vector(31 downto 0);
     npc_ID_EX_REGLN          : in  std_logic_vector(31 downto 0);
 	op1_ID_EX_REGLN 		: in std_logic_vector(31 downto 0);
 	op2_ID_EX_REGLN 		: in std_logic_vector(31 downto 0);
@@ -26,6 +26,7 @@ port(
 	result_EX_MEM_LNREG 	: out std_logic_vector(31 downto 0);
 	op2_EX_MEM_LNREG 	: out std_logic_vector(31 downto 0);
 	inst_EX_MEM_LNREG 		: out std_logic_vector(31 downto 0);
+	pc_EX_MEM_LNREG 		: out std_logic_vector(31 downto 0);
     npc_EX_MEM_LNREG         : out std_logic_vector(31 downto 0);
 	
 	branch_out		: out std_logic; -- control flow
@@ -44,7 +45,7 @@ architecture Behavioral of EX is
 begin
 	branchCode <= inst_ID_EX_REGLN(14 downto 12);
 	-- Here is the overarching process
-	process(addr_ID_EX_REGLN, op1_ID_EX_REGLN, op2_ID_EX_REGLN, imm_ID_EX_REGLN, inst_ID_EX_REGLN, alu_src, alu_op)
+	process(pc_ID_EX_REGLN, op1_ID_EX_REGLN, op2_ID_EX_REGLN, imm_ID_EX_REGLN, inst_ID_EX_REGLN, alu_src, alu_op)
 		variable op1 : signed(31 downto 0);	-- holds op1 value
 		variable op2 : signed(31 downto 0);	-- holds op2 val or imm val from ID
 		variable shift : integer range 0 to 63;
@@ -58,7 +59,7 @@ begin
 		-- set op1 to be a reg or the address depending on inst type
 		if branch = '1' OR jump = '1' then 
 			-- if we are branching/jump?
-			op1 := signed(addr_ID_EX_REGLN);	-- the case where we need it to be the address
+			op1 := signed(pc_ID_EX_REGLN);	-- the case where we need it to be the address
 		else 
 			op1 := signed(op1_ID_EX_REGLN);
 		end if;
@@ -144,6 +145,7 @@ begin
 	op2_EX_MEM_LNREG 	<= op1_ID_EX_REGLN;
 	inst_EX_MEM_LNREG 		<= inst_ID_EX_REGLN;
     npc_EX_MEM_LNREG        <= npc_ID_EX_REGLN;
+    pc_EX_MEM_LNREG         <= pc_ID_EX_REGLN;
 
 
 	branch_out      <= branch;

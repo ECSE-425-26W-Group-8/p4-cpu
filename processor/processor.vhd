@@ -42,6 +42,7 @@ architecture Behavioral of processor is
 
     component InstructionFetch is
     port(
+        reset               : in  std_logic;
         clk                 : in  std_logic;
         stall               : in  std_logic;
         branchTake_EX_IF_LN : in  std_logic;
@@ -83,7 +84,7 @@ architecture Behavioral of processor is
     component EX is
     port(
         -- Data inputs
-        addr_ID_EX_REGLN         : in  std_logic_vector(31 downto 0);
+        pc_ID_EX_REGLN         : in  std_logic_vector(31 downto 0);
         npc_ID_EX_REGLN          : in  std_logic_vector(31 downto 0);
         op1_ID_EX_REGLN          : in  std_logic_vector(31 downto 0);
         op2_ID_EX_REGLN          : in  std_logic_vector(31 downto 0);
@@ -103,6 +104,7 @@ architecture Behavioral of processor is
         result_EX_MEM_LNREG      : out std_logic_vector(31 downto 0);
         op2_EX_MEM_LNREG         : out std_logic_vector(31 downto 0);
         npc_EX_MEM_LNREG         : out std_logic_vector(31 downto 0);
+        pc_EX_MEM_LNREG         : out std_logic_vector(31 downto 0);
         inst_EX_MEM_LNREG        : out std_logic_vector(31 downto 0);
         branch_taken_EX_MEM_LNREG : out std_logic;
         -- Control outputs
@@ -308,6 +310,7 @@ begin
 
     -- --- IF Stage ---
     if_stage : InstructionFetch port map(
+        reset               => reset,
         clk                 => clk,
         stall               => stall,
         branchTake_EX_IF_LN => exmem_branch_taken,
@@ -344,7 +347,7 @@ begin
 
     -- --- EX Stage ---
     ex_stage : EX port map(
-        addr_ID_EX_REGLN         => idex_pc,
+        pc_ID_EX_REGLN         => idex_pc,
         npc_ID_EX_REGLN          => idex_npc, -- missing from EX
         op1_ID_EX_REGLN          => idex_op1,
         op2_ID_EX_REGLN          => idex_op2,
@@ -361,6 +364,7 @@ begin
         branch_taken_EX_MEM_LNREG=> ex_branch_taken,
         result_EX_MEM_LNREG      => ex_result,
         op2_EX_MEM_LNREG     => ex_op2,
+        pc_EX_MEM_LNREG         => ex_pc, --missing from EX
         npc_EX_MEM_LNREG         => ex_npc, --missing from EX
         inst_EX_MEM_LNREG        => ex_inst,
         mem_read_out             => ex_mem_read,
@@ -481,6 +485,7 @@ begin
             -- ─── MEM/WB: always update ────────────────────────────────────────
             memwb_data      <= mem_data;
             memwb_result    <= mem_result;
+            memwb_pc        <= mem_pc;
             memwb_npc       <= mem_npc;
             memwb_inst      <= mem_inst;
             memwb_reg_write <= mem_reg_write;
@@ -503,7 +508,7 @@ begin
             else
                 exmem_result      <= ex_result;
                 exmem_op2         <= ex_op2;
-                exmem_pc          <= ex_npc;
+                exmem_pc          <= ex_pc;
                 exmem_npc         <= ex_npc;
                 exmem_inst        <= ex_inst;
                 exmem_branch_taken <= ex_branch_taken;

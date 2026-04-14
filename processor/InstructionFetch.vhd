@@ -10,7 +10,8 @@ port(
     npc_IF_ID_LNREG         : out std_logic_vector(31 downto 0);
 	inst_IF_ID_LNREG 		: out std_logic_vector(31 downto 0);
     clk                     : in std_logic;
-    stall                   : in STD_LOGIC
+    stall                   : in STD_LOGIC;
+    reset                   : in STD_LOGIC
 ); 
 end InstructionFetch;
 
@@ -62,10 +63,14 @@ begin
     );
 
     
-    pc_update: process(clk)
+    pc_update: process(clk, reset)
     begin
-        if rising_edge(clk) and not stall = '1' then
-            pc <= next_pc;
+        if reset = '1' then
+            pc <= (others => '0');
+        else
+            if rising_edge(clk) and not stall = '1' then
+                pc <= next_pc;
+            end if;
         end if;
     end process pc_update;
 
