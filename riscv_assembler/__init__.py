@@ -6,5 +6,6 @@ convert = AC(output_mode = 'f', nibble_mode = False, hex_mode = False)
 
 # Convert a whole .s file to text file
 convert("factorial.s", "factorial_bin.txt")
+convert("C:/Users/dejon/Documents/ECSE425/Projects/Proj4/p4-cpu/riscvTestFiles/simpleRFClear.s", "C:/Users/dejon/Documents/ECSE425/Projects/Proj4/p4-cpu/program.txt")
 
 # %%

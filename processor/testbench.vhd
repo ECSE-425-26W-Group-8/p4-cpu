@@ -31,8 +31,14 @@ begin
         reset => reset
     );
 
-    -- 1 GHz clock: period = 1 ns
-    clk <= not clk after 0.5 ns;
+    -- 1 GHz clock generation
+    clk_process : process
+    begin
+        clk <= '0';
+        wait for 0.5 ns;
+        clk <= '1';
+        wait for 0.5 ns;
+    end process;
 
     stim : process
     begin

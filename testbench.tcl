@@ -45,8 +45,39 @@ vcom -2008 "$PROC_DIR/testbench.vhd"
 # ── 2. Load simulation ────────────────────────────────────────────────────────
 vsim -voptargs="+acc" $TB_ENTITY
 
+# Load waves here_____________________
+view wave
+#radix -hex
+
+add wave -noupdate -divider "Processor Signals"
+add wave -label "Clock"   $UUT/clk
+add wave -label "Opcode"   $UUT/clk
+
+add wave -noupdate -divider "Fetch Control Units"
+add wave -label "Inst_out"   $UUT/if_stage/npc_IF_ID_LNREG
+add wave -label "Inst_Mem_out"   $UUT/if_stage/inst_IF_ID_LNREG
+
+add wave -noupdate -divider "ID"
+add wave -label "Clock"   $UUT/id_stage/clk
+add wave -label "Opcode"   $UUT/id_stage/opcode
+add wave -label "ALU_Op"   $UUT/id_stage/alu_op
+add wave -label "ALU_Src"  $UUT/id_stage/alu_src
+add wave -label "RegWrite" $UUT/id_stage/reg_write
+
+add wave -radix hex -label "op1_out"  $UUT/id_stage/op1_ID_EX_LNREG
+add wave -radix hex -label "op2_out" $UUT/id_stage/op2_ID_EX_LNREG
+add wave -radix hex -label "imm_out" $UUT/id_stage/imm_ID_EX_LNREG
+
+add wave -radix hex -label "inst_in" $UUT/id_stage/inst_IF_ID_REGLN
+
+add wave -noupdate -divider "EX Control Units"
+add wave -radix hex -label "ALU_out"   $UUT/ex_stage/result_EX_MEM_LNREG
+add wave -radix hex -label "imm_in" $UUT/ex_stage/imm_ID_EX_REGLN
 
 
+add wave -noupdate -divider "MEM Control Units"
+
+add wave -noupdate -divider "WB Control Units"
 
 # ── 3. Clear and load instruction memory ─────────────────────────────────────
 
@@ -61,21 +92,22 @@ run 10005 ns
 # Hierarchy path: testbench → uut → mem_stage (MEM) → data_mem (memory) → ram
 
 # TODO rename to right output
-dump_mem $DMEM memory.txt 8192
+#dump_mem $DMEM memory.txt 8192
+# dump_mem $IMEM inst_mem.txt 8192
 
 # ── 6. Dump register file ─────────────────────────────────────────────────────
 # The register file lives inside the ID stage as signal 'regs'.
 # ModelSim exposes it as a memory-like object addressable by register index.
 
 # TODO rename to right output
-set fp [open register_file.txt w]
-for {set i 0} {$i < 32} {incr i} {
-    # Each element of regs is 32 bits wide; read as a single entry.
-    set val [string trim [mem display -format bin \
-                          -startaddress $i -endaddress $i \
-                          -noaddress $REGFILE]]
-    puts $fp $val
-}
-close $fp
+#set fp [open register_file.txt w]
+#for {set i 0} {$i < 32} {incr i} {
+#    # Each element of regs is 32 bits wide; read as a single entry.
+#    set val [string trim [mem display -format bin \
+#                          -startaddress $i -endaddress $i \
+#                          -noaddress $REGFILE]]
+#    puts $fp $val
+#}
+#close $fp
 
 echo "--- Simulation complete ---"
