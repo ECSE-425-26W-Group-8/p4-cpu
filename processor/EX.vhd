@@ -132,6 +132,7 @@ begin
 			branch_taken_EX_MEM_LNREG <= '1';
 			result_EX_MEM_LNREG <= std_logic_vector(op1 + op2);
 		elsif jump = '1' then
+			branch_taken_EX_MEM_LNREG <= '1';
 			if alu_op = "1100" then	-- jalr
 				result_EX_MEM_LNREG <= std_logic_vector(signed(op1_ID_EX_REGLN) + op2);
 			else

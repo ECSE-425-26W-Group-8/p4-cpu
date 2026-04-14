@@ -427,9 +427,9 @@ begin
     );
 
     -- --- input to Instruction decode with stalls ---
-    idin_inst <= NOP when stall = '0' else ifid_inst;
-    idin_pc   <= NOP when stall = '0' else ifid_pc;
-    idin_npc  <= NOP when stall = '0' else ifid_npc;
+    idin_inst <= NOP when stall = '1' else ifid_inst;
+    idin_pc   <= (others => '0') when stall = '1' else ifid_pc;
+    idin_npc  <= (others => '0') when stall = '1' else ifid_npc;
 
     -- =========================================================================
     -- Pipeline register update process
