@@ -71,11 +71,17 @@ add wave -label     "IR"    -noupdate  -radix hex  $UUT/ifid_inst
 add wave -divider "Instruction Decode"
 add wave -label   "opcode"    -noupdate  -radix bin  $UUT/id_stage/opcode
 add wave -label   "jump"    -noupdate  -radix hex  $UUT/id_stage/jump
+add wave -label     "rs1"    -noupdate  -radix unsigned  $UUT/id_stage/rs1
+add wave -label     "rs2"    -noupdate  -radix unsigned  $UUT/id_stage/rs2
 
 add wave -divider "ID/EX REG"
 add wave -label     "PC"    -noupdate   -radix hex  $UUT/idex_pc
 add wave -label     "NPC"    -noupdate  -radix hex  $UUT/idex_npc
 add wave -label     "IR"    -noupdate  -radix hex  $UUT/idex_inst
+add wave -label     "op1"    -noupdate  -radix hex  $UUT/idex_op1
+add wave -label     "op2"    -noupdate  -radix hex  $UUT/idex_op2
+add wave -label     "memory read"    -noupdate  -radix hex  $UUT/idex_mem_read
+add wave -label     "memory write"    -noupdate  -radix hex  $UUT/idex_mem_write
 add wave -label     "is jump"    -noupdate  -radix bin  $UUT/idex_jump
 
 add wave -divider "Execute"
@@ -85,15 +91,23 @@ add wave -label     "PC"    -noupdate   -radix hex  $UUT/exmem_pc
 add wave -label     "NPC"    -noupdate  -radix hex  $UUT/exmem_npc
 add wave -label     "IR"    -noupdate  -radix hex  $UUT/exmem_inst
 add wave -label     "result"    -noupdate  -radix hex  $UUT/exmem_result
+add wave -label     "memory address"    -noupdate  -radix hex  $UUT/exmem_op2
+add wave -label     "memory read"    -noupdate  -radix hex  $UUT/exmem_mem_read
+add wave -label     "memory write"    -noupdate  -radix hex  $UUT/exmem_mem_write
 add wave -label     "branch taken"    -noupdate  -radix hex  $UUT/exmem_branch_taken
 add wave -label     "is jump"    -noupdate  -radix bin  $UUT/exmem_jump
 
 
 add wave -divider "Memory"
+
 add wave -divider "MEM/WB REG"
 add wave -label     "PC"    -noupdate   -radix hex  $UUT/memwb_pc
 add wave -label     "NPC"    -noupdate  -radix hex  $UUT/memwb_npc
 add wave -label     "IR"    -noupdate  -radix hex  $UUT/memwb_inst
+add wave -label     "Memory Data"    -noupdate  -radix hex  $UUT/memwb_data
+add wave -label     "ALU result"    -noupdate  -radix hex  $UUT/memwb_result
+add wave -label     "reg writeback"    -noupdate  -radix bin  $UUT/memwb_reg_write
+add wave -label     "write back select"    -noupdate  -radix bin  $UUT/memwb_wb_sel
 
 add wave -divider "Write Back"
 add wave -divider "Hazard Detection"

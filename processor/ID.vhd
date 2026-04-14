@@ -38,18 +38,18 @@ architecture Behavioral of ID is
     signal regs : reg_file_type := (others => (others => '0'));
 
 	-- instr fields
-    signal opcode: std_logic_vector(6 downto 0);
-    signal rd: std_logic_vector(4 downto 0);
-    signal funct3: std_logic_vector(2 downto 0);
-    signal rs1: std_logic_vector(4 downto 0);
-    signal rs2: std_logic_vector(4 downto 0);
-    signal funct7: std_logic_vector(6 downto 0);
+    signal opcode: std_logic_vector(6 downto 0) := (others => '0');
+    signal rd: std_logic_vector(4 downto 0) := (others => '0');
+    signal funct3: std_logic_vector(2 downto 0) := (others => '0');
+    signal rs1: std_logic_vector(4 downto 0) := (others => '0');
+    signal rs2: std_logic_vector(4 downto 0) := (others => '0');
+    signal funct7: std_logic_vector(6 downto 0) := (others => '0');
 
-    signal wb_rd: std_logic_vector(4 downto 0);
+    signal wb_rd: std_logic_vector(4 downto 0) := (others => '0');
 
-    signal op1_val: std_logic_vector(31 downto 0);
-    signal op2_val: std_logic_vector(31 downto 0);
-    signal imm_val: std_logic_vector(31 downto 0);
+    signal op1_val: std_logic_vector(31 downto 0) := (others => '0');
+    signal op2_val: std_logic_vector(31 downto 0) := (others => '0');
+    signal imm_val: std_logic_vector(31 downto 0) := (others => '0');
 begin
 	-- extract fields from current instruction
     opcode <= inst_IF_ID_REGLN(6 downto 0);

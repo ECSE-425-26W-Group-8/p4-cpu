@@ -45,6 +45,8 @@ architecture Behavioral of MEM is
     -- signals
     signal s_address : integer range 0 to 32767;
 
+    signal vec_address : std_logic_vector(31 downto 0) := (others => '0');
+
     -- components
     component memory IS
         GENERIC(
@@ -77,7 +79,9 @@ begin
         -- waitrequest => s_waitrequest
     );
 
-    s_address <= to_integer(unsigned(result_EX_MEM_REGLN));
+    vec_address <= result_EX_MEM_REGLN when mem_write_EX_MEM_REGLN = '1' or mem_read_EX_MEM_REGLN = '1'
+                else (others => '0');
+    s_address <= to_integer(unsigned(vec_address));
 
 
     -- alu result pass through
