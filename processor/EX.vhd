@@ -45,7 +45,7 @@ architecture Behavioral of EX is
 begin
 	branchCode <= inst_ID_EX_REGLN(14 downto 12);
 	-- Here is the overarching process
-	process(pc_ID_EX_REGLN, op1_ID_EX_REGLN, op2_ID_EX_REGLN, imm_ID_EX_REGLN, inst_ID_EX_REGLN, alu_src, alu_op)
+	process(pc_ID_EX_REGLN, op1_ID_EX_REGLN, op2_ID_EX_REGLN, imm_ID_EX_REGLN, inst_ID_EX_REGLN, branchCode, alu_src, alu_op)
 		variable op1 : signed(31 downto 0);	-- holds op1 value
 		variable op2 : signed(31 downto 0);	-- holds op2 val or imm val from ID
 		variable shift : integer range 0 to 63;
