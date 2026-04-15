@@ -80,11 +80,16 @@ add wave -label     "NPC"    -noupdate  -radix hex  $UUT/idex_npc
 add wave -label     "IR"    -noupdate  -radix hex  $UUT/idex_inst
 add wave -label     "op1"    -noupdate  -radix hex  $UUT/idex_op1
 add wave -label     "op2"    -noupdate  -radix hex  $UUT/idex_op2
-add wave -label     "memory read"    -noupdate  -radix hex  $UUT/idex_mem_read
-add wave -label     "memory write"    -noupdate  -radix hex  $UUT/idex_mem_write
+add wave -label     "Immediate Value"    -noupdate  -radix dec  $UUT/idex_imm
+add wave -label     "ALU source"    -noupdate  -radix bin  $UUT/idex_alu_src
+add wave -label     "ALU Operation"    -noupdate  -radix bin  $UUT/idex_alu_op
+add wave -label     "memory read"    -noupdate  -radix bin  $UUT/idex_mem_read
+add wave -label     "memory write"    -noupdate  -radix bin  $UUT/idex_mem_write
+add wave -label     "is branch"    -noupdate  -radix bin  $UUT/idex_branch
 add wave -label     "is jump"    -noupdate  -radix bin  $UUT/idex_jump
 
 add wave -divider "Execute"
+add wave -label     "branch code" -noupdate -radix bin $UUT/ex_stage/branchCode
 
 add wave -divider "EX/MEM REG"
 add wave -label     "PC"    -noupdate   -radix hex  $UUT/exmem_pc
@@ -92,8 +97,8 @@ add wave -label     "NPC"    -noupdate  -radix hex  $UUT/exmem_npc
 add wave -label     "IR"    -noupdate  -radix hex  $UUT/exmem_inst
 add wave -label     "result"    -noupdate  -radix hex  $UUT/exmem_result
 add wave -label     "op2"    -noupdate  -radix hex  $UUT/exmem_op2
-add wave -label     "memory read"    -noupdate  -radix hex  $UUT/exmem_mem_read
-add wave -label     "memory write"    -noupdate  -radix hex  $UUT/exmem_mem_write
+add wave -label     "memory read"    -noupdate  -radix bin  $UUT/exmem_mem_read
+add wave -label     "memory write"    -noupdate  -radix bin  $UUT/exmem_mem_write
 add wave -label     "branch taken"    -noupdate  -radix hex  $UUT/exmem_branch_taken
 add wave -label     "is jump"    -noupdate  -radix bin  $UUT/exmem_jump
 
