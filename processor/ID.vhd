@@ -223,8 +223,8 @@ begin
         -- BRANCH compare rs1 rs2
         when "1100011" =>
             branch <= '1';
-            alu_src <= '0'; -- compare 2 regs
-            alu_op <= "0001"; -- SUB for compare
+            alu_src <= '1'; -- add imm value for target branch address
+            alu_op <= "0000"; -- 
         -- JAL jump link to PC + imm
         when "1101111" =>
             jump <= '1';
