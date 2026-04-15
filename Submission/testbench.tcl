@@ -100,6 +100,7 @@ add wave -label     "op2"    -noupdate  -radix hex  $UUT/exmem_op2
 add wave -label     "memory read"    -noupdate  -radix bin  $UUT/exmem_mem_read
 add wave -label     "memory write"    -noupdate  -radix bin  $UUT/exmem_mem_write
 add wave -label     "branch taken"    -noupdate  -radix hex  $UUT/exmem_branch_taken
+add wave -label     "is branch"    -noupdate  -radix bin  $UUT/exmem_branch
 add wave -label     "is jump"    -noupdate  -radix bin  $UUT/exmem_jump
 
 
@@ -116,7 +117,7 @@ add wave -label     "write back select"    -noupdate  -radix bin  $UUT/memwb_wb_
 
 add wave -divider "Write Back"
 add wave -label "write back data" -noupdate -radix hex $UUT/wb_data
-add wave -label "write back reg" -noupdate -radix hex $UUT/wb_data
+add wave -label "write back reg" -noupdate -radix hex $UUT/wb_regwrite
 add wave -divider "Hazard Detection"
 
 # ── 4. Define run_simulation procedure ───────────────────────────────────────
