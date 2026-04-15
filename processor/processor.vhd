@@ -366,15 +366,15 @@ begin
         branch_taken_EX_MEM_LNREG=> ex_branch_taken,
         result_EX_MEM_LNREG      => ex_result,
         op2_EX_MEM_LNREG     => ex_op2,
-        pc_EX_MEM_LNREG         => ex_pc, --missing from EX
-        npc_EX_MEM_LNREG         => ex_npc, --missing from EX
+        pc_EX_MEM_LNREG         => ex_pc,
+        npc_EX_MEM_LNREG         => ex_npc,
         inst_EX_MEM_LNREG        => ex_inst,
         mem_read_out             => ex_mem_read,
         mem_write_out            => ex_mem_write,
         reg_write_out            => ex_reg_write,
+        branch_out               => ex_branch,
         jump_out                 => ex_jump,
         wb_sel_out               => ex_wb_sel
-        -- remove alu_src and alu_op
     );
 
     -- --- MEM Stage ---

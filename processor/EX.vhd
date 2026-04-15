@@ -101,8 +101,8 @@ begin
 				end if;
 			when "1010" => -- lui
 				result_EX_MEM_LNREG <= std_logic_vector(op2);
-			when "1011" => -- auipc
-				result_EX_MEM_LNREG <= std_logic_vector(op1 + op2);
+			when "1011" => -- auipc: PC + (imm<<12)
+				result_EX_MEM_LNREG <= std_logic_vector(signed(pc_ID_EX_REGLN) + op2);
 			when others =>
 				result_EX_MEM_LNREG <= (others => '0');
 		end case;

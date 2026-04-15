@@ -238,7 +238,7 @@ begin
             reg_write <= '1';
             alu_src <= '1'; -- compute target = rs1 + imm
             wb_sel <= "10"; -- write pc + 4
-			alu_op <= "1011";
+			alu_op <= "1100"; -- EX uses "1100" to select rs1 (not PC) as base
         -- LUI
         when "0110111" =>	-- lui
             reg_write <= '1';
@@ -246,9 +246,10 @@ begin
             wb_sel <= "00";
 			alu_op <= "1010";
 		when "0010111" =>	-- auipc
-			alu_op <= "1011";
-		-- when "1100111" =>	-- jalr
-		-- 	alu_op <= "1100";
+			reg_write <= '1';
+			alu_src   <= '1';
+			wb_sel    <= "00";
+			alu_op    <= "1011";
         when others =>
             null;
     end case;
