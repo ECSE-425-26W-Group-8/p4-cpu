@@ -115,6 +115,8 @@ add wave -label     "reg writeback"    -noupdate  -radix bin  $UUT/memwb_reg_wri
 add wave -label     "write back select"    -noupdate  -radix bin  $UUT/memwb_wb_sel
 
 add wave -divider "Write Back"
+add wave -label "write back data" -noupdate -radix hex $UUT/wb_data
+add wave -label "write back reg" -noupdate -radix hex $UUT/wb_data
 add wave -divider "Hazard Detection"
 
 # ── 4. Define run_simulation procedure ───────────────────────────────────────
