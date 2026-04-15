@@ -206,6 +206,7 @@ begin
                 when "111" => alu_op <= "0011"; -- ANDI
                 when "110" => alu_op <= "0100"; -- ORI
                 when "100" => alu_op <= "0101"; -- XORI
+                when "010" => alu_op <= "1001"; -- SLTI
                 when others => null;
             end case;
         -- LOAD (lw) addr : rs1 + imm

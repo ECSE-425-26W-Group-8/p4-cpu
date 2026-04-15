@@ -49,8 +49,6 @@ architecture Behavioral of InstructionFetch is
 
 begin
 
-    -- TODO implement stall logic
-
     instruction_mem : memory port map(
         clock => clk,
         address => int_pc,
