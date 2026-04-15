@@ -71,7 +71,7 @@ begin
 			op2 := signed(op2_ID_EX_REGLN);	-- reg2 val
 		end if;
 		
-		shift := to_integer(unsigned(std_logic_vector(op2(5 downto 0))));	-- how much to shift
+		shift := to_integer(unsigned(std_logic_vector(op2(4 downto 0))));	-- how much to shift
 		
 		-- Here is where we get the ALU functions sorted
 		case alu_op is
